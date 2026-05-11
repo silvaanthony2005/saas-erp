@@ -5,7 +5,7 @@ import { useInventory } from "@/hooks/useInventory";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Package, Plus, Search, Filter, Edit, Trash2, X, AlertCircle } from "lucide-react";
+import { Package, Plus, Search, Filter, Edit, Trash2, X, AlertCircle, ImagePlus, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
@@ -66,10 +66,12 @@ export default function InventoryPage() {
   const [formData, setFormData] = useState<InventoryItemInput>(initialFormData);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleOpenCreate = () => {
     setEditingItem(null);
     setFormData(initialFormData);
+    setImagePreview(null);
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -86,6 +88,7 @@ export default function InventoryPage() {
       min_stock: item.min_stock || 5,
       category_id: item.category_id,
     });
+    setImagePreview(item.image_url || null);
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -94,7 +97,19 @@ export default function InventoryPage() {
     setIsModalOpen(false);
     setEditingItem(null);
     setFormData(initialFormData);
+    setImagePreview(null);
     setFormErrors({});
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleInputChange = (field: keyof InventoryItemInput, value: string | number) => {
@@ -190,6 +205,7 @@ export default function InventoryPage() {
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                    <th className="px-6 py-4">Imagen</th>
                     <th className="px-6 py-4">Producto / SKU</th>
                     <th className="px-6 py-4 text-center">Categoría</th>
                     <th className="px-6 py-4 text-center">Stock</th>
@@ -200,7 +216,7 @@ export default function InventoryPage() {
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {loading && items.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center">
+                      <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                           <p className="text-slate-400 font-medium">Cargando productos...</p>
@@ -215,6 +231,19 @@ export default function InventoryPage() {
                       transition={{ delay: i * 0.05 }}
                       className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
                     >
+                      <td className="px-6 py-4">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="w-12 h-12 rounded-xl object-cover" 
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <Package className="w-5 h-5 text-slate-300 dark:text-slate-600" />
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</span>
@@ -268,7 +297,7 @@ export default function InventoryPage() {
                   ))}
                   {items.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center">
+                      <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center">
                             <Package className="w-8 h-8 text-slate-300" />
@@ -312,6 +341,41 @@ export default function InventoryPage() {
                   </Button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                  <div className="flex items-center gap-6">
+                    <div className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800 group hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+                      {imagePreview ? (
+                        <>
+                          <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <label className="cursor-pointer text-white">
+                              <Upload className="w-6 h-6" />
+                              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                            </label>
+                          </div>
+                        </>
+                      ) : (
+                        <label className="flex flex-col items-center cursor-pointer text-slate-400 hover:text-blue-500 transition-colors">
+                          <ImagePlus className="w-8 h-8 mb-1" />
+                          <span className="text-xs">Agregar</span>
+                          <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Imagen del producto</p>
+                      <p className="text-xs text-slate-400">PNG, JPG o WEBP hasta 5MB</p>
+                      {imagePreview && (
+                        <button 
+                          type="button"
+                          onClick={() => setImagePreview(null)}
+                          className="text-xs text-rose-500 hover:text-rose-600 mt-1"
+                        >
+                          Eliminar imagen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
                     <Input
