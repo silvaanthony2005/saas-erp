@@ -49,6 +49,7 @@ const initialFormData: InventoryItemInput = {
   name: "",
   sku: "",
   description: "",
+  image_url: "",
   cost_price: 0,
   sale_price: 0,
   stock_quantity: 0,
@@ -82,6 +83,7 @@ export default function InventoryPage() {
       name: item.name,
       sku: item.sku,
       description: item.description || "",
+      image_url: item.image_url || "",
       cost_price: item.cost_price,
       sale_price: item.sale_price,
       stock_quantity: item.stock_quantity,
@@ -106,7 +108,9 @@ export default function InventoryPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const base64 = reader.result as string;
+        setImagePreview(base64);
+        setFormData(prev => ({ ...prev, image_url: base64 }));
       };
       reader.readAsDataURL(file);
     }

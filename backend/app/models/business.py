@@ -10,6 +10,7 @@ class Product(Base):
     sku = Column(String, unique=True, index=True)
     name = Column(String, index=True)
     description = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
     cost_price = Column(Float, default=0.0)
     sale_price = Column(Float, default=0.0)
     stock_quantity = Column(Integer, default=0)

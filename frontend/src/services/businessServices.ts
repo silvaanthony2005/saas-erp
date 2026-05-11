@@ -5,6 +5,7 @@ export interface InventoryItem {
   name: string;
   sku: string;
   description?: string;
+  image_url?: string;
   cost_price: number;
   sale_price: number;
   stock_quantity: number;
@@ -16,6 +17,7 @@ export interface InventoryItemInput {
   name: string;
   sku: string;
   description?: string;
+  image_url?: string;
   cost_price: number;
   sale_price: number;
   stock_quantity: number;

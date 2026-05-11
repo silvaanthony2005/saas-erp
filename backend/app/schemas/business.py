@@ -5,6 +5,7 @@ class ProductBase(BaseModel):
     sku: str
     name: str
     description: Optional[str] = None
+    image_url: Optional[str] = None
     cost_price: float
     sale_price: float
     stock_quantity: int
@@ -16,6 +17,8 @@ class ProductCreate(ProductBase):
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
     stock_quantity: Optional[int] = None
