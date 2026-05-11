@@ -2,48 +2,51 @@
 
 import * as React from "react"
 
-type Theme = "light" | "dark" | "system"
+type Theme = "light" | "dark"
 
 interface ThemeContextValue {
   theme: Theme
   setTheme: (theme: Theme) => void
+  toggleTheme: () => void
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined)
 
-function getSystemTheme() {
+function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "light"
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = React.useState<Theme>(() => {
-    if (typeof window === "undefined") return "system"
-    const stored = window.localStorage.getItem("theme") as Theme | null
-    return stored ?? "system"
-  })
+  const [theme, setThemeState] = React.useState<Theme>("light")
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
-    const root = document.documentElement
-    const resolvedTheme = theme === "system" ? getSystemTheme() : theme
-    root.classList.remove("light", "dark")
-    root.classList.add(resolvedTheme)
-    window.localStorage.setItem("theme", theme)
+    const stored = localStorage.getItem("theme") as Theme | null
+    const initial = stored ?? getSystemTheme()
+    setThemeState(initial)
+    document.documentElement.classList.add(initial)
+    setMounted(true)
+  }, [])
+
+  const setTheme = React.useCallback((newTheme: Theme) => {
+    const oldTheme = theme
+    document.documentElement.classList.remove(oldTheme)
+    document.documentElement.classList.add(newTheme)
+    localStorage.setItem("theme", newTheme)
+    setThemeState(newTheme)
   }, [theme])
 
-  React.useEffect(() => {
-    if (theme !== "system") return
-    const media = window.matchMedia("(prefers-color-scheme: dark)")
-    const onChange = () => {
-      const root = document.documentElement
-      root.classList.remove("light", "dark")
-      root.classList.add(media.matches ? "dark" : "light")
-    }
-    media.addEventListener("change", onChange)
-    return () => media.removeEventListener("change", onChange)
-  }, [theme])
+  const toggleTheme = React.useCallback(() => {
+    const newTheme = theme === "dark" ? "light" : "dark"
+    setTheme(newTheme)
+  }, [theme, setTheme])
 
-  const value = React.useMemo(() => ({ theme, setTheme }), [theme])
+  const value = React.useMemo(() => ({
+    theme,
+    setTheme,
+    toggleTheme
+  }), [theme, setTheme, toggleTheme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

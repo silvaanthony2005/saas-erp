@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.core.config import settings
-from backend.app.core.middleware import LicenseMiddleware
-from backend.app.core.database import engine, Base
-from backend.app.api import v1_inventory, v1_sales, v1_accounting, v1_hr
+from app.core.config import settings
+from app.core.middleware import LicenseMiddleware
+from app.core.database import engine, Base
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
@@ -17,7 +17,7 @@ app = FastAPI(
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # O ["http://localhost:3000"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

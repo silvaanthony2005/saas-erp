@@ -35,9 +35,9 @@ export function StatCard({
           <Icon className="w-7 h-7" />
         </div>
         <div>
-          <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider">{label}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">{label}</p>
           <div className="flex items-center gap-2">
-            <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{value}</h3>
             {trend && (
               <span className={cn(
                 "text-xs font-bold px-2 py-0.5 rounded-full flex items-center",

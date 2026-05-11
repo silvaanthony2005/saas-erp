@@ -16,6 +16,20 @@ class ExpenseResponse(ExpenseBase):
     class Config:
         from_attributes = True
 
+class IncomeBase(BaseModel):
+    description: str
+    amount: float
+    category: str
+
+class IncomeCreate(IncomeBase):
+    pass
+
+class IncomeResponse(IncomeBase):
+    id: int
+    timestamp: datetime
+    class Config:
+        from_attributes = True
+
 class FinancialSummary(BaseModel):
     total_income: float
     total_expenses: float

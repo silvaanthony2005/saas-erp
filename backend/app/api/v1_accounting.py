@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.app.core.database import get_db
-from backend.app.schemas.accounting import ExpenseCreate, ExpenseResponse, FinancialSummary
-from backend.app.services.accounting_service import AccountingService
+from app.core.database import get_db
+from app.schemas.accounting import ExpenseCreate, ExpenseResponse, FinancialSummary, IncomeCreate, IncomeResponse
+from app.services.accounting_service import AccountingService
 
 router = APIRouter()
 
@@ -22,3 +22,15 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
 @router.get("/summary", response_model=FinancialSummary)
 def get_financial_summary(db: Session = Depends(get_db)):
     return AccountingService.get_summary(db)
+
+@router.post("/income", response_model=IncomeResponse)
+def create_income(income: IncomeCreate, db: Session = Depends(get_db)):
+    return AccountingService.create_income(db, income)
+
+@router.get("/income", response_model=List[IncomeResponse])
+def read_incomes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return AccountingService.get_incomes(db, skip=skip, limit=limit)
+
+@router.delete("/income/{income_id}")
+def delete_income(income_id: int, db: Session = Depends(get_db)):
+    return AccountingService.delete_income(db, income_id)

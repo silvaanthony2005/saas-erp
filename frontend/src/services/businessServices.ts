@@ -57,6 +57,15 @@ export interface Expense {
   timestamp: string;
 }
 
+export interface Income {
+  id: number;
+  description: string;
+  amount: number;
+  category: string;
+  timestamp: string;
+  entry_type?: string;
+}
+
 export interface FinancialSummary {
   total_income: number;
   total_expenses: number;
@@ -72,6 +81,14 @@ export const accountingService = {
     body: JSON.stringify(data),
   }),
   deleteExpense: (id: number) => fetchApi(`/accounting/expenses/${id}`, {
+    method: "DELETE",
+  }),
+  getIncomes: () => fetchApi<Income[]>("/accounting/income"),
+  createIncome: (data: Partial<Income>) => fetchApi<Income>("/accounting/income", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  deleteIncome: (id: number) => fetchApi(`/accounting/income/${id}`, {
     method: "DELETE",
   }),
   getSummary: () => fetchApi<FinancialSummary>("/accounting/summary"),

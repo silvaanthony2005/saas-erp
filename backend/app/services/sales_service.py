@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from backend.app.models.business import Transaction, TransactionDetail, Product
-from backend.app.schemas.sales import SaleCreate
-from backend.app.services.inventory_service import InventoryService
+from app.models.business import Transaction, TransactionDetail, Product
+from app.schemas.sales import SaleCreate
+from app.services.inventory_service import InventoryService
 
 class SalesService:
     @staticmethod

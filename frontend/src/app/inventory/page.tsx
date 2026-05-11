@@ -9,7 +9,7 @@ import { Package, Plus, Search, Filter, Edit, Trash2, X, AlertCircle } from "luc
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { InventoryItemInput } from "@/services/businessServices";
+import { InventoryItem, InventoryItemInput } from "@/services/businessServices";
 
 interface FormErrors {
   name?: string;
@@ -61,7 +61,7 @@ export default function InventoryPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItemInput | null>(null);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [formData, setFormData] = useState<InventoryItemInput>(initialFormData);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -180,7 +180,7 @@ export default function InventoryPage() {
               <input 
                 type="text" 
                 placeholder="Buscar por nombre o SKU..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border-none text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               />
             </div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} Productos en total</p>

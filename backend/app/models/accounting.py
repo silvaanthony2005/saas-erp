@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from backend.app.core.database import Base
+from app.core.database import Base
 import datetime
 
 class Expense(Base):
@@ -13,10 +13,11 @@ class Expense(Base):
 
 class AccountingEntry(Base):
     __tablename__ = "accounting_entries"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     entry_type = Column(String) # "income" (venta) or "expense" (gasto)
     amount = Column(Float)
     description = Column(String)
+    category = Column(String) # sales, services, other (income) / rent, utilities, etc (expense)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     reference_id = Column(Integer, nullable=True) # ID de la venta o gasto relacionado

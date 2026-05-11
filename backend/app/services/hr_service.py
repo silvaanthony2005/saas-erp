@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from backend.app.models.hr import Employee, Payroll
-from backend.app.schemas.hr import EmployeeCreate, PayrollCreate
-from backend.app.services.accounting_service import AccountingService
+from app.models.hr import Employee, Payroll
+from app.schemas.hr import EmployeeCreate, PayrollCreate
+from app.services.accounting_service import AccountingService
 from fastapi import HTTPException
 
 class HRService:

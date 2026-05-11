@@ -15,7 +15,7 @@ export function PerformanceChart({ data }: { data: { day: string, value: number 
   const max = Math.max(...data.map(d => d.value)) || 1;
 
   return (
-    <div className="bg-slate-900 dark:bg-slate-900/80 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl h-full flex flex-col border border-white/5">
+    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl h-full flex flex-col border border-white/5 dark:shadow-none">
       <h3 className="text-xl font-bold mb-6 flex items-center gap-2 relative z-10">
         <TrendingUp className="w-5 h-5 text-blue-400" />
         Rendimiento Semanal

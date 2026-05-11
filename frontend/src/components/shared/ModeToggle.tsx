@@ -2,22 +2,26 @@
 
 import * as React from "react"
 import { Moon, Sun } from "lucide-react"
-import { Button } from "@/components/ui/Button"
 import { useTheme } from "@/components/shared/ThemeProvider"
+import { cn } from "@/lib/utils"
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { theme, toggleTheme } = useTheme()
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="rounded-full w-10 h-10 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+    <button
+      onClick={toggleTheme}
+      className={cn(
+        "relative w-10 h-10 rounded-full transition-all duration-300",
+        "hover:scale-110 active:scale-95",
+        "bg-slate-100 dark:bg-slate-800",
+        "hover:bg-slate-200 dark:hover:bg-slate-700",
+        "text-slate-600 dark:text-slate-300"
+      )}
+      aria-label="Cambiar tema"
     >
-      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Cambiar tema</span>
-    </Button>
+      <Sun className="absolute inset-0 m-auto h-5 w-5 transition-opacity duration-300" style={{ opacity: theme === "light" ? 1 : 0 }} />
+      <Moon className="absolute inset-0 m-auto h-5 w-5 transition-opacity duration-300" style={{ opacity: theme === "dark" ? 1 : 0 }} />
+    </button>
   )
 }

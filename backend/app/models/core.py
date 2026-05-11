@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from backend.app.core.database import Base
+from app.core.database import Base
 import datetime
 
 class License(Base):

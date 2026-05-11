@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from backend.app.models.business import Product, Category
-from backend.app.schemas.business import ProductCreate, CategoryCreate, ProductUpdate
+from app.models.business import Product, Category
+from app.schemas.business import ProductCreate, CategoryCreate, ProductUpdate
 from fastapi import HTTPException
 
 class InventoryService:
