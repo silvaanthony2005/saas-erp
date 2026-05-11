@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Package, RefreshCw, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function InventoryPreview() {
   const { items, loading, error, refreshInventory } = useInventory();
@@ -38,12 +39,12 @@ export function InventoryPreview() {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/30 p-6">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 p-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+          <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
             <Package className="w-5 h-5" />
           </div>
-          <CardTitle>Inventario en Tiempo Real</CardTitle>
+          <CardTitle className="text-base text-slate-900 dark:text-white">Inventario en Tiempo Real</CardTitle>
         </div>
         <Button variant="ghost" size="icon" onClick={refreshInventory} title="Refrescar">
           <RefreshCw className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
@@ -104,4 +105,4 @@ export function InventoryPreview() {
   );
 }
 
-import { cn } from "@/lib/utils";
+

@@ -34,6 +34,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.remove(oldTheme)
     document.documentElement.classList.add(newTheme)
     localStorage.setItem("theme", newTheme)
+    if (newTheme === "dark") {
+      document.documentElement.style.setProperty("--background", "#020617")
+      document.documentElement.style.setProperty("--foreground", "#f1f5f9")
+      document.documentElement.style.setProperty("--card", "#0f172a")
+      document.documentElement.style.setProperty("--card-foreground", "#f1f5f9")
+    } else {
+      document.documentElement.style.setProperty("--background", "#f8fafc")
+      document.documentElement.style.setProperty("--foreground", "#0f172a")
+      document.documentElement.style.setProperty("--card", "#ffffff")
+      document.documentElement.style.setProperty("--card-foreground", "#0f172a")
+    }
     setThemeState(newTheme)
   }, [theme])
 

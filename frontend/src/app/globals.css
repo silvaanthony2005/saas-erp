@@ -16,9 +16,17 @@
   --card-foreground: #0f172a;
 }
 
+.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+}
+
 @layer base {
   html {
     transition: background-color 0.2s ease, color 0.2s ease;
+    color-scheme: light dark;
   }
   body {
     background: var(--background);

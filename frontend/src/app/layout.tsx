@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="bg-slate-50 dark:bg-slate-950 flex h-screen overflow-hidden text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <body className="flex h-screen overflow-hidden transition-colors duration-200">
         <ThemeProvider>
           <Sidebar />
           <div className="flex-1 flex flex-col relative overflow-hidden">
