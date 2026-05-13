@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.hr import Employee, Payroll
+from app.models.accounting import Expense
 from app.schemas.hr import EmployeeCreate, PayrollCreate
 from app.services.accounting_service import AccountingService
 from fastapi import HTTPException
@@ -36,13 +37,23 @@ class HRService:
         db.commit()
         db.refresh(db_payroll)
         
-        # Registrar como gasto en contabilidad automáticamente
+        # Registrar como gasto en la tabla expenses para que aparezca en el listado de gastos
+        db_expense = Expense(
+            description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
+            amount=net_salary,
+            category="salary"
+        )
+        db.add(db_expense)
+        db.flush()
+
+        # Registrar como salida contable
         AccountingService.register_entry(
             db,
             entry_type="expense",
             amount=net_salary,
             description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
-            reference_id=db_payroll.id
+            reference_id=db_payroll.id,
+            category="salary"
         )
         
         return db_payroll

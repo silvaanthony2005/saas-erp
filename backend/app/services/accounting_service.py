@@ -2,20 +2,31 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.accounting import Expense, AccountingEntry
-from app.models.business import Transaction
 from app.schemas.accounting import ExpenseCreate, IncomeCreate
-import datetime
 
 class AccountingService:
     @staticmethod
-    def register_entry(db: Session, entry_type: str, amount: float, description: str, reference_id: int = None):
+    def register_entry(db: Session, entry_type: str, amount: float, description: str, reference_id: int = None, category: str = None):
         entry = AccountingEntry(
             entry_type=entry_type,
             amount=amount,
             description=description,
-            reference_id=reference_id
+            reference_id=reference_id,
+            category=category
         )
         db.add(entry)
+        
+        # Si es un gasto automático de inventario, también lo registramos en la tabla 'expenses'
+        # para que sea visible en la lista detallada de gastos del frontend.
+        if entry_type == "expense":
+            expense = Expense(
+                description=description,
+                amount=amount,
+                category=category or "Inventory",
+                timestamp=entry.timestamp
+            )
+            db.add(expense)
+
         db.commit()
         return entry
 
@@ -32,7 +43,8 @@ class AccountingService:
             entry_type="expense", 
             amount=db_expense.amount, 
             description=f"Gasto: {db_expense.description}",
-            reference_id=db_expense.id
+            reference_id=db_expense.id,
+            category=db_expense.category
         )
         
         return db_expense
@@ -52,7 +64,8 @@ class AccountingService:
 
     @staticmethod
     def get_incomes(db: Session, skip: int = 0, limit: int = 100):
-        return db.query(AccountingEntry).filter(AccountingEntry.entry_type == "income").offset(skip).limit(limit).all()
+        # Devuelve solo los registros de tipo "income" para cumplir con el esquema IncomeResponse del frontend
+        return db.query(AccountingEntry).filter(AccountingEntry.entry_type == "income").order_by(AccountingEntry.timestamp.desc()).offset(skip).limit(limit).all()
 
     @staticmethod
     def delete_income(db: Session, income_id: int):
@@ -68,16 +81,9 @@ class AccountingService:
 
     @staticmethod
     def get_summary(db: Session):
-        # Sumar ingresos de ventas con tipo 'sale'
-        sales_income = db.query(func.sum(Transaction.total_amount)).filter(Transaction.type == "sale").scalar() or 0.0
+        total_income = db.query(func.sum(AccountingEntry.amount)).filter(AccountingEntry.entry_type == "income").scalar() or 0.0
 
-        # Sumar ingresos de la tabla accounting_entries (tipo income)
-        manual_income = db.query(func.sum(AccountingEntry.amount)).filter(AccountingEntry.entry_type == "income").scalar() or 0.0
-
-        total_income = sales_income + manual_income
-
-        # Sumar gastos de la tabla expenses
-        total_expenses = db.query(func.sum(Expense.amount)).scalar() or 0.0
+        total_expenses = db.query(func.sum(AccountingEntry.amount)).filter(AccountingEntry.entry_type == "expense").scalar() or 0.0
 
         return {
             "total_income": total_income,
