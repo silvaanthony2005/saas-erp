@@ -4,54 +4,53 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Users, Plus, Search, Trash2, Edit, X, AlertCircle, UserCheck, Clock, DollarSign } from "lucide-react";
+import { Users, Plus, Search, Trash2, Edit, X, UserCheck, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { hrService, Employee } from "@/services/hrService";
 
-interface Employee {
-  id: number;
-  name: string;
+interface FormData {
+  first_name: string;
+  last_name: string;
   email: string;
-  department: string;
   position: string;
-  salary: number;
+  base_salary: string;
   hire_date: string;
-  status: string;
 }
 
-const initialFormData = {
-  name: "",
+const initialFormData: FormData = {
+  first_name: "",
+  last_name: "",
   email: "",
-  department: "General",
   position: "",
-  salary: "",
+  base_salary: "",
   hire_date: new Date().toISOString().split("T")[0],
 };
 
+function fullName(emp: Employee): string {
+  return `${emp.first_name} ${emp.last_name}`;
+}
+
+function initials(emp: Employee): string {
+  return (emp.first_name[0] + emp.last_name[0]).toUpperCase().slice(0, 2);
+}
+
 export default function HRPage() {
-  const [employees, setEmployees] = useState<Employee[]>([
-    { id: 1, name: "Juan Pérez", email: "juan@empresa.com", department: "Ventas", position: "Vendedor", salary: 1200, hire_date: "2024-01-15", status: "active" },
-    { id: 2, name: "María García", email: "maria@empresa.com", department: "Administración", position: "Contadora", salary: 1500, hire_date: "2023-08-20", status: "active" },
-    { id: 3, name: "Carlos López", email: "carlos@empresa.com", department: "Operaciones", position: "Almacenero", salary: 1000, hire_date: "2024-03-01", status: "active" },
-  ]);
-  const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/hr/employees");
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.length > 0) {
-          setEmployees(data);
-        }
-      }
+      const data = await hrService.getEmployees();
+      setEmployees(data);
     } catch (err) {
       console.error("Error fetching employees:", err);
     } finally {
@@ -64,28 +63,31 @@ export default function HRPage() {
   }, []);
 
   const filteredEmployees = employees.filter(
-    (emp) =>
-      emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.position.toLowerCase().includes(searchQuery.toLowerCase())
+    (emp) => {
+      const q = searchQuery.toLowerCase();
+      const name = fullName(emp).toLowerCase();
+      return name.includes(q) || emp.position.toLowerCase().includes(q);
+    }
   );
 
   const handleOpenCreate = () => {
     setEditingEmployee(null);
     setFormData(initialFormData);
+    setError("");
     setShowForm(true);
   };
 
   const handleOpenEdit = (employee: Employee) => {
     setEditingEmployee(employee);
     setFormData({
-      name: employee.name,
+      first_name: employee.first_name,
+      last_name: employee.last_name,
       email: employee.email,
-      department: employee.department,
       position: employee.position,
-      salary: employee.salary.toString(),
+      base_salary: employee.base_salary.toString(),
       hire_date: employee.hire_date,
     });
+    setError("");
     setShowForm(true);
   };
 
@@ -93,41 +95,50 @@ export default function HRPage() {
     setShowForm(false);
     setEditingEmployee(null);
     setFormData(initialFormData);
+    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setError("");
     try {
+      const payload = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        position: formData.position,
+        base_salary: parseFloat(formData.base_salary),
+        hire_date: formData.hire_date,
+      };
+
       if (editingEmployee) {
-        setEmployees(employees.map(emp => emp.id === editingEmployee.id ? { ...emp, ...formData, salary: parseFloat(formData.salary), id: editingEmployee.id } : emp));
+        await hrService.updateEmployee(editingEmployee.id, payload);
       } else {
-        const newEmployee: Employee = {
-          id: Math.max(...employees.map(e => e.id), 0) + 1,
-          name: formData.name,
-          email: formData.email,
-          department: formData.department,
-          position: formData.position,
-          salary: parseFloat(formData.salary),
-          hire_date: formData.hire_date,
-          status: "active",
-        };
-        setEmployees([...employees, newEmployee]);
+        await hrService.createEmployee(payload);
       }
+
       handleCloseForm();
-    } catch (err) {
-      console.error("Error saving employee:", err);
+      fetchEmployees();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al guardar";
+      setError(msg);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = (id: number) => {
-    setEmployees(employees.filter(emp => emp.id !== id));
+  const handleDelete = async (id: number) => {
+    try {
+      await hrService.deleteEmployee(id);
+      fetchEmployees();
+    } catch (err) {
+      console.error("Error deleting employee:", err);
+    }
   };
 
-  const totalSalary = employees.reduce((acc, emp) => acc + emp.salary, 0);
-  const activeEmployees = employees.filter(emp => emp.status === "active").length;
+  const totalSalary = employees.reduce((acc, emp) => acc + emp.base_salary, 0);
+  const activeEmployees = employees.filter(emp => emp.is_active).length;
 
   return (
     <main className="flex-1 p-8 overflow-auto">
@@ -183,13 +194,13 @@ export default function HRPage() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl">
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl w-full">
         <CardHeader className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar por nombre, departamento..."
+              placeholder="Buscar por nombre o cargo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -198,21 +209,20 @@ export default function HRPage() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{employees.length} empleados</p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
                   <th className="px-6 py-4">Empleado</th>
-                  <th className="px-6 py-4 text-center">Departamento</th>
-                  <th className="px-6 py-4 text-center">Cargo</th>
-                  <th className="px-6 py-4 text-right">Salario</th>
-                  <th className="px-6 py-4 text-right">Acciones</th>
+                  <th className="px-6 py-4 w-48 text-center">Cargo</th>
+                  <th className="px-6 py-4 w-32 text-right">Salario</th>
+                  <th className="px-6 py-4 w-24 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
+                    <td colSpan={4} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                         <p className="text-slate-400 font-medium">Cargando empleados...</p>
@@ -230,24 +240,21 @@ export default function HRPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-sm">
-                          {employee.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          {initials(employee)}
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-900 dark:text-white text-sm">{employee.name}</span>
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">
+                            {fullName(employee)}
+                          </span>
                           <span className="text-xs text-slate-400 font-medium">{employee.email}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider">
-                        {employee.department}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
                       <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{employee.position}</span>
                     </td>
                     <td className="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
-                      ${formatNumber(employee.salary)}
+                      ${formatNumber(employee.base_salary)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -273,7 +280,7 @@ export default function HRPage() {
                 ))}
                 {filteredEmployees.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
+                    <td colSpan={4} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center">
                           <Users className="w-8 h-8 text-slate-300 dark:text-slate-600" />
@@ -315,15 +322,31 @@ export default function HRPage() {
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
+                {error && (
+                  <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-sm font-medium">
+                    {error}
+                  </div>
+                )}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Nombre completo"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
+                      <Input
+                        value={formData.first_name}
+                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        placeholder="Nombre"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apellido *</label>
+                      <Input
+                        value={formData.last_name}
+                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        placeholder="Apellido"
+                        required
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
@@ -337,20 +360,6 @@ export default function HRPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Departamento</label>
-                      <select
-                        value={formData.department}
-                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                        className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      >
-                        <option value="General">General</option>
-                        <option value="Ventas">Ventas</option>
-                        <option value="Administración">Administración</option>
-                        <option value="Operaciones">Operaciones</option>
-                        <option value="RRHH">RRHH</option>
-                      </select>
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cargo</label>
                       <Input
                         value={formData.position}
@@ -359,29 +368,27 @@ export default function HRPage() {
                         required
                       />
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Salario *</label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
-                        value={formData.salary}
-                        onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                        value={formData.base_salary}
+                        onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
                         placeholder="0.00"
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha de ingreso</label>
-                      <Input
-                        type="date"
-                        value={formData.hire_date}
-                        onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                        required
-                      />
-                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha de ingreso</label>
+                    <Input
+                      type="date"
+                      value={formData.hire_date}
+                      onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                      required
+                    />
                   </div>
                   <div className="flex gap-3 pt-4">
                     <Button type="button" variant="outline" onClick={handleCloseForm} className="flex-1 rounded-xl">
