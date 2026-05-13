@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { accountingService, Expense, Income, FinancialSummary } from "@/services/businessServices";
-import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt } from "lucide-react";
+import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+
+const PAGE_SIZE = 20;
 
 const INCOME_CATEGORIES = [
   "Ventas",
@@ -37,6 +39,7 @@ export default function AccountingPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("income");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [incomeFormData, setIncomeFormData] = useState({
@@ -76,6 +79,10 @@ export default function AccountingPage() {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeTab]);
 
   const handleIncomeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +157,11 @@ export default function AccountingPage() {
       exp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       exp.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const paginatedIncomes = filteredIncomes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginatedExpenses = filteredExpenses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = (activeTab === "income" ? filteredIncomes : filteredExpenses).length;
+  const totalFilteredPages = Math.max(1, Math.ceil(totalPages / PAGE_SIZE));
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -311,10 +323,10 @@ export default function AccountingPage() {
                     <select
                       value={incomeFormData.category}
                       onChange={(e) => setIncomeFormData({ ...incomeFormData, category: e.target.value })}
-                      className="flex h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:bg-emerald-950/20 dark:border-emerald-800/50"
+                      className="flex h-11 w-full rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-emerald-800/50 appearance-none cursor-pointer"
                     >
                       {INCOME_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
                       ))}
                     </select>
                   </div>
@@ -379,10 +391,10 @@ export default function AccountingPage() {
                     <select
                       value={expenseFormData.category}
                       onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
-                      className="flex h-11 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:bg-rose-950/20 dark:border-rose-800/50"
+                      className="flex h-11 w-full rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-rose-800/50 appearance-none cursor-pointer"
                     >
                       {EXPENSE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
                       ))}
                     </select>
                   </div>
@@ -405,7 +417,7 @@ export default function AccountingPage() {
         )}
       </AnimatePresence>
 
-      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl">
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl w-full">
         <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
@@ -451,21 +463,21 @@ export default function AccountingPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="w-full">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
-                  <th className="px-5 py-4">Fecha</th>
-                  <th className="px-5 py-4">Descripción</th>
-                  <th className="px-5 py-4 text-center">Categoría</th>
-                  <th className="px-5 py-4 text-right">Monto</th>
-                  <th className="px-5 py-4 text-right">Acciones</th>
+                  <th className="px-4 py-4 w-20">Fecha</th>
+                  <th className="px-4 py-4 w-[55%]">Descripción</th>
+                  <th className="px-4 py-4 w-28 text-center">Categoría</th>
+                  <th className="px-4 py-4 text-right">Monto</th>
+                  <th className="px-4 py-4 w-12 text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {activeTab === "income" ? (
                   <>
-                    {filteredIncomes.map((income, i) => (
+                    {paginatedIncomes.map((income, i) => (
                       <motion.tr
                         key={income.id}
                         initial={{ opacity: 0, x: -10 }}
@@ -473,27 +485,27 @@ export default function AccountingPage() {
                         transition={{ delay: i * 0.03 }}
                         className="group hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors"
                       >
-                        <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        <td className="px-4 py-4">
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                             {formatDate(income.timestamp)}
                           </span>
                         </td>
-                        <td className="px-5 py-4">
-                          <span className="font-bold text-slate-900 dark:text-white text-sm">{income.description}</span>
+                        <td className="px-4 py-4">
+                          <span className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{income.description}</span>
                         </td>
-                        <td className="px-5 py-4 text-center">
-                          <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
+                        <td className="px-4 py-4 text-center">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-wider">
                             {income.category}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
+                        <td className="px-4 py-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
                           +${formatNumber(income.amount)}
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-4 py-4 text-right">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                            className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all opacity-0 group-hover:opacity-100"
                             onClick={() => handleDeleteIncome(income.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -519,7 +531,7 @@ export default function AccountingPage() {
                   </>
                 ) : (
                   <>
-                    {filteredExpenses.map((expense, i) => (
+                    {paginatedExpenses.map((expense, i) => (
                       <motion.tr
                         key={expense.id}
                         initial={{ opacity: 0, x: -10 }}
@@ -527,27 +539,27 @@ export default function AccountingPage() {
                         transition={{ delay: i * 0.03 }}
                         className="group hover:bg-rose-50/30 dark:hover:bg-rose-900/10 transition-colors"
                       >
-                        <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        <td className="px-4 py-4">
+                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                             {formatDate(expense.timestamp)}
                           </span>
                         </td>
-                        <td className="px-5 py-4">
-                          <span className="font-bold text-slate-900 dark:text-white text-sm">{expense.description}</span>
+                        <td className="px-4 py-4">
+                          <span className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{expense.description}</span>
                         </td>
-                        <td className="px-5 py-4 text-center">
-                          <span className="px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[10px] font-bold uppercase tracking-wider">
+                        <td className="px-4 py-4 text-center">
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[9px] font-bold uppercase tracking-wider">
                             {expense.category}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-right font-black text-rose-600 dark:text-rose-400">
+                        <td className="px-4 py-4 text-right font-black text-rose-600 dark:text-rose-400 text-sm">
                           -${formatNumber(expense.amount)}
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-4 py-4 text-right">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                            className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all opacity-0 group-hover:opacity-100"
                             onClick={() => handleDeleteExpense(expense.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -575,6 +587,35 @@ export default function AccountingPage() {
               </tbody>
             </table>
           </div>
+
+          {totalFilteredPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-500">
+                Página {page} de {totalFilteredPages} ({activeTab === "income" ? filteredIncomes.length : filteredExpenses.length} registros)
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline" size="icon"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="h-8 w-8 rounded-lg"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[3rem] text-center">
+                  {page} / {totalFilteredPages}
+                </span>
+                <Button
+                  variant="outline" size="icon"
+                  onClick={() => setPage(p => Math.min(totalFilteredPages, p + 1))}
+                  disabled={page >= totalFilteredPages}
+                  className="h-8 w-8 rounded-lg"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </main>
