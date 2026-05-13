@@ -1,19 +1,25 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from app.models.business import Transaction, TransactionDetail, Product
+from app.models.business import Transaction, TransactionDetail, Product, Customer
+from app.models.accounting import AccountingEntry
 from app.schemas.sales import SaleCreate
 from app.services.inventory_service import InventoryService
+
 
 class SalesService:
     @staticmethod
     def create_sale(db: Session, sale_data: SaleCreate):
         try:
-            # 1. Calcular total y validar stock
             total_amount = 0.0
             details_to_create = []
+
+            # Validar cliente si se proporciona
+            if sale_data.customer_id:
+                customer = db.query(Customer).filter(Customer.id == sale_data.customer_id).first()
+                if not customer:
+                    raise HTTPException(status_code=404, detail="Customer not found")
             
             for item in sale_data.details:
-                # Usar with_for_update() para bloquear la fila si fuera una DB concurrente (en SQLite previene race conditions básicas)
                 product = db.query(Product).filter(Product.id == item.product_id).with_for_update().first()
                 if not product:
                     raise HTTPException(status_code=404, detail=f"Product with id {item.product_id} not found")
@@ -24,7 +30,6 @@ class SalesService:
                         detail=f"Insufficient stock for product {product.name}. Available: {product.stock_quantity}"
                     )
                 
-                # Descontar stock directamente aquí para estar dentro de la misma transacción
                 product.stock_quantity -= item.quantity
                 
                 line_total = item.unit_price * item.quantity
@@ -34,26 +39,33 @@ class SalesService:
                     TransactionDetail(
                         product_id=item.product_id,
                         quantity=item.quantity,
-                        unit_price=item.unit_price
+                        unit_price=item.unit_price,
+                        product_name=product.name
                     )
                 )
 
-            # 2. Crear la transacción (Venta)
             db_sale = Transaction(
                 type="sale",
                 total_amount=total_amount,
+                payment_method=sale_data.payment_method or "Cash",
+                customer_id=sale_data.customer_id,
                 details=details_to_create
             )
-            
             db.add(db_sale)
-            # 3. Hacer COMMIT de TODO el bloque. 
-            # Si algo falla antes de aquí, la DB no guarda nada (Atomicidad)
+            db.flush()
+
+            income_entry = AccountingEntry(
+                entry_type="income",
+                amount=total_amount,
+                description=f"Venta #{db_sale.id} ({db_sale.payment_method})",
+                category="Ventas",
+                reference_id=db_sale.id
+            )
+            db.add(income_entry)
             db.commit()
             db.refresh(db_sale)
             return db_sale
         except Exception as e:
-            # Si hay CUALQUIER error (pago rechazado, error de red, fallo de stock),
-            # hacemos ROLLBACK para revertir cambios en stock y transacciones.
             db.rollback()
             if isinstance(e, HTTPException):
                 raise e
@@ -61,8 +73,17 @@ class SalesService:
 
     @staticmethod
     def get_sales(db: Session, skip: int = 0, limit: int = 100):
-        return db.query(Transaction).filter(Transaction.type == "sale").offset(skip).limit(limit).all()
+        sales = db.query(Transaction).filter(Transaction.type == "sale").order_by(Transaction.timestamp.desc()).offset(skip).limit(limit).all()
+        for s in sales:
+            if s.customer:
+                s.customer_name = f"{s.customer.first_name} {s.customer.last_name}"
+                s.customer_dni = s.customer.dni
+        return sales
 
     @staticmethod
     def get_sale_by_id(db: Session, sale_id: int):
-        return db.query(Transaction).filter(Transaction.id == sale_id, Transaction.type == "sale").first()
+        sale = db.query(Transaction).filter(Transaction.id == sale_id, Transaction.type == "sale").first()
+        if sale and sale.customer:
+            sale.customer_name = f"{sale.customer.first_name} {sale.customer.last_name}"
+            sale.customer_dni = sale.customer.dni
+        return sale

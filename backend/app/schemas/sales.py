@@ -12,18 +12,24 @@ class SaleDetailCreate(SaleDetailBase):
 
 class SaleDetailResponse(SaleDetailBase):
     id: int
+    product_name: Optional[str] = None
     class Config:
         from_attributes = True
 
 class SaleBase(BaseModel):
     total_amount: float
+    payment_method: Optional[str] = "Cash"
 
 class SaleCreate(BaseModel):
     details: List[SaleDetailCreate]
+    payment_method: Optional[str] = "Cash"
+    customer_id: Optional[int] = None
 
 class SaleResponse(SaleBase):
     id: int
     timestamp: datetime
+    customer_name: Optional[str] = None
+    customer_dni: Optional[str] = None
     details: List[SaleDetailResponse]
     class Config:
         from_attributes = True
