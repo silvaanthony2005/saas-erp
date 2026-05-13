@@ -1,29 +1,55 @@
 import { useState, useEffect, useCallback } from 'react';
-import { inventoryService, InventoryItem, InventoryItemInput } from '@/services/businessServices';
+import { inventoryService, categoryService, InventoryItem, InventoryItemInput, Category } from '@/services/businessServices';
 
 export function useInventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshInventory = async () => {
+  const refreshInventory = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await inventoryService.getAll();
-      setItems(data);
+      const skip = (page - 1) * pageSize;
+      const result = await inventoryService.getAll({ skip, limit: pageSize, search, category_id: categoryId });
+      setItems(result.products);
+      setTotal(result.total);
       setError(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, search, categoryId]);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await categoryService.getAll();
+      setCategories(data);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
+    refreshInventory();
+  }, [refreshInventory]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const createItem = useCallback(async (data: InventoryItemInput) => {
     setLoading(true);
     try {
       const newItem = await inventoryService.create(data);
-      setItems(prev => [...prev, newItem]);
+      setItems(prev => [newItem, ...prev]);
+      setTotal(prev => prev + 1);
       setError(null);
       return newItem;
     } catch (err: any) {
@@ -54,6 +80,7 @@ export function useInventory() {
     try {
       await inventoryService.delete(id);
       setItems(prev => prev.filter(item => item.id !== id));
+      setTotal(prev => prev - 1);
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -63,9 +90,14 @@ export function useInventory() {
     }
   }, []);
 
-  useEffect(() => {
-    refreshInventory();
-  }, []);
+  const goToPage = useCallback((p: number) => {
+    setPage(Math.max(1, Math.min(p, totalPages)));
+  }, [totalPages]);
 
-  return { items, loading, error, refreshInventory, createItem, updateItem, deleteItem };
+  return {
+    items, total, page, pageSize, totalPages, search, categoryId, categories,
+    loading, error,
+    setSearch, setCategoryId, goToPage, refreshInventory,
+    createItem, updateItem, deleteItem
+  };
 }
