@@ -8,7 +8,8 @@ import {
   Users, 
   CircleDollarSign,
   Settings,
-  ChevronRight
+  ChevronRight,
+  ScrollText
 } from "lucide-react";
 import { ModeToggle } from "./shared/ModeToggle";
 import Link from "next/link";
@@ -18,6 +19,8 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", color: "text-blue-500", href: "/" },
   { icon: ShoppingCart, label: "POS / Ventas", color: "text-emerald-500", href: "/pos" },
+  { icon: ScrollText, label: "Historial", color: "text-emerald-400", href: "/sales" },
+  { icon: Users, label: "Clientes", color: "text-indigo-500", href: "/customers" },
   { icon: Package, label: "Inventario", color: "text-amber-500", href: "/inventory" },
   { icon: CircleDollarSign, label: "Contabilidad", color: "text-violet-500", href: "/accounting" },
   { icon: Users, label: "Nómina / RRHH", color: "text-hr", href: "/hr" },
