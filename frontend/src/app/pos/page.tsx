@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useInventory } from "@/hooks/useInventory"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
-import { ShoppingCart, Search, Trash2, Plus, Minus, CreditCard, Banknote, AlertTriangle, CheckCircle2, Loader2, RefreshCcw } from "lucide-react"
+import { ShoppingCart, Search, Trash2, Plus, Minus, CreditCard, Banknote, AlertTriangle, CheckCircle2, Loader2, RefreshCcw, Info } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -18,7 +18,7 @@ interface CartItem extends InventoryItem {
 interface Toast {
   id: number
   message: string
-  type: "warning" | "error" | "success"
+  type: "warning" | "error" | "success" | "info"
 }
 
 export default function POSPage() {
@@ -82,7 +82,7 @@ export default function POSPage() {
     loadMoreProducts(true)
   }, []) // Solo al montar
 
-  const showToast = (message: string, type: "warning" | "error" | "success" = "warning") => {
+  const showToast = (message: string, type: "warning" | "error" | "success" | "info" = "warning") => {
     toastIdRef.current += 1
     const id = toastIdRef.current
     setToasts(prev => [...prev, { id, message, type }])
@@ -265,10 +265,12 @@ export default function POSPage() {
                   ? "bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300"
                   : toast.type === "success"
                   ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                  : toast.type === "info"
+                  ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
                   : "bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
               )}
             >
-              {toast.type === "success" ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
+              {toast.type === "success" ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : toast.type === "info" ? <Info className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
               <span className="text-sm font-medium">{toast.message}</span>
             </motion.div>
           ))}
