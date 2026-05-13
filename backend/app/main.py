@@ -3,10 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.middleware import LicenseMiddleware
 from app.core.database import engine, Base
-from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr
+
+# Importar modelos para que Base.metadata los conozca antes de crear tablas
+from app.models.business import Product, Category, Transaction, TransactionDetail, Customer
+from app.models.accounting import Expense, AccountingEntry
+from app.models.hr import Employee, Payroll
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
+
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -32,6 +38,8 @@ app.include_router(v1_inventory.router, prefix=f"{settings.API_V1_STR}/inventory
 app.include_router(v1_sales.router, prefix=f"{settings.API_V1_STR}/sales", tags=["sales"])
 app.include_router(v1_accounting.router, prefix=f"{settings.API_V1_STR}/accounting", tags=["accounting"])
 app.include_router(v1_hr.router, prefix=f"{settings.API_V1_STR}/hr", tags=["hr"])
+app.include_router(v1_customers.router, prefix=f"{settings.API_V1_STR}/customers", tags=["customers"])
+app.include_router(v1_dashboard.router, prefix=settings.API_V1_STR, tags=["dashboard"])
 
 @app.get("/")
 def root():

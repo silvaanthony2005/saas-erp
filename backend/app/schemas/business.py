@@ -26,8 +26,16 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
+    category_name: Optional[str] = None
+    
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm_with_category(cls, product):
+        data = cls.from_orm(product).dict()
+        data["category_name"] = product.category.name if product.category else None
+        return cls(**data)
 
 class CategoryBase(BaseModel):
     name: str
@@ -37,5 +45,21 @@ class CategoryCreate(CategoryBase):
 
 class CategoryResponse(CategoryBase):
     id: int
+    class Config:
+        from_attributes = True
+
+class CustomerBase(BaseModel):
+    dni: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+
+class CustomerCreate(CustomerBase):
+    pass
+
+class CustomerResponse(CustomerBase):
+    id: int
+    created_at: str
     class Config:
         from_attributes = True
