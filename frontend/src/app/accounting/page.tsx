@@ -9,7 +9,8 @@ import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, A
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { formatBS } from "@/lib/currency";
+import { formatBS, formatUSD } from "@/lib/currency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +43,7 @@ export default function AccountingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
+  const { rate: currentExchangeRate } = useExchangeRate();
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [incomeFormData, setIncomeFormData] = useState({
     description: "",
@@ -210,6 +212,9 @@ export default function AccountingPage() {
             <p className="text-xl font-black text-emerald-700 dark:text-emerald-300">
               {summary ? formatBS(summary.total_income_bs) : "Bs. 0"}
             </p>
+            <p className="text-xs font-bold text-emerald-500/70">
+              {summary ? formatUSD(summary.total_income_bs / currentExchangeRate) : "$0.00"}
+            </p>
             <p className="text-[10px] font-medium text-emerald-600/60 mt-1">Total registrado</p>
           </CardContent>
         </Card>
@@ -224,6 +229,9 @@ export default function AccountingPage() {
             </div>
             <p className="text-xl font-black text-rose-700 dark:text-rose-300">
               {summary ? formatBS(summary.total_expenses_bs) : "Bs. 0"}
+            </p>
+            <p className="text-xs font-bold text-rose-500/70">
+              {summary ? formatUSD(summary.total_expenses_bs / currentExchangeRate) : "$0.00"}
             </p>
             <p className="text-[10px] font-medium text-rose-600/60 mt-1">Total registrado</p>
           </CardContent>
@@ -258,6 +266,12 @@ export default function AccountingPage() {
                 : "text-rose-700 dark:text-rose-300"
             )}>
               {summary ? formatBS(summary.net_profit_bs) : "Bs. 0"}
+            </p>
+            <p className={cn(
+              "text-xs font-bold",
+              summary && summary.net_profit_bs >= 0 ? "text-emerald-500/70" : "text-rose-500/70"
+            )}>
+              {summary ? formatUSD(summary.net_profit_bs / currentExchangeRate) : "$0.00"}
             </p>
             <p className={cn(
               "text-[10px] font-medium mt-1",
@@ -471,7 +485,7 @@ export default function AccountingPage() {
                   <th className="px-4 py-4 w-20">Fecha</th>
                   <th className="px-4 py-4 w-[55%]">Descripción</th>
                   <th className="px-4 py-4 w-28 text-center">Categoría</th>
-                  <th className="px-4 py-4 text-right">Monto</th>
+                  <th className="px-4 py-4 w-40 text-right">Monto</th>
                   <th className="px-4 py-4 w-12 text-right"></th>
                 </tr>
               </thead>
@@ -499,8 +513,15 @@ export default function AccountingPage() {
                             {income.category}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                          {formatBS(income.amount_bs)}
+                        <td className="px-4 py-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                              {formatBS(income.amount_bs)}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-500/60">
+                              {formatUSD(income.amount_bs / currentExchangeRate)}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-right">
                           <Button
@@ -553,8 +574,15 @@ export default function AccountingPage() {
                             {expense.category}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right font-black text-rose-600 dark:text-rose-400 text-sm">
-                          {formatBS(expense.amount_bs)}
+                        <td className="px-4 py-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
+                              {formatBS(expense.amount_bs)}
+                            </span>
+                            <span className="text-[10px] font-bold text-rose-500/60">
+                              {formatUSD(expense.amount_bs / currentExchangeRate)}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-right">
                           <Button
