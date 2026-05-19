@@ -5,32 +5,35 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { accountingService, Expense, Income, FinancialSummary } from "@/services/businessServices";
-import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/format";
 import { formatBS, formatUSD } from "@/lib/currency";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 const PAGE_SIZE = 20;
 
-const INCOME_CATEGORIES = [
-  "Ventas",
-  "Servicios",
-  "Inversiones",
-  "Otros",
-];
+const DEFAULT_INCOME_CATEGORIES = ["Ventas", "Servicios", "Inversiones", "Otros"];
+const DEFAULT_EXPENSE_CATEGORIES = ["Alquiler", "Servicios", "Salarios", "Inventario", "Mantenimiento", "Transporte", "Marketing", "Otros"];
 
-const EXPENSE_CATEGORIES = [
-  "Alquiler",
-  "Servicios",
-  "Salarios",
-  "Inventario",
-  "Mantenimiento",
-  "Transporte",
-  "Marketing",
-  "Otros",
-];
+const STORAGE_KEY_INCOME = "acc_income_categories";
+const STORAGE_KEY_EXPENSE = "acc_expense_categories";
+
+function loadCategories(key: string, defaults: string[]): string[] {
+  if (typeof window === "undefined") return defaults;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaults;
+  } catch {
+    return defaults;
+  }
+}
+
+function saveCategories(key: string, categories: string[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(categories));
+  } catch {}
+}
 
 type TabType = "income" | "expenses";
 
@@ -42,9 +45,15 @@ export default function AccountingPage() {
   const [activeTab, setActiveTab] = useState<TabType>("income");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [incomeCategories, setIncomeCategories] = useState<string[]>(() => loadCategories(STORAGE_KEY_INCOME, DEFAULT_INCOME_CATEGORIES));
+  const [expenseCategories, setExpenseCategories] = useState<string[]>(() => loadCategories(STORAGE_KEY_EXPENSE, DEFAULT_EXPENSE_CATEGORIES));
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const { rate: currentExchangeRate } = useExchangeRate();
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [newIncomeCat, setNewIncomeCat] = useState("");
+  const [newExpenseCat, setNewExpenseCat] = useState("");
+  const [addingIncomeCat, setAddingIncomeCat] = useState(false);
+  const [addingExpenseCat, setAddingExpenseCat] = useState(false);
   const [incomeFormData, setIncomeFormData] = useState({
     description: "",
     amount_bs: "",
@@ -138,6 +147,28 @@ export default function AccountingPage() {
     } catch (err) {
       console.error("Error deleting income:", err);
     }
+  };
+
+  const handleAddIncomeCategory = () => {
+    const cat = newIncomeCat.trim();
+    if (!cat || incomeCategories.includes(cat)) return;
+    const updated = [...incomeCategories, cat];
+    setIncomeCategories(updated);
+    saveCategories(STORAGE_KEY_INCOME, updated);
+    setIncomeFormData({ ...incomeFormData, category: cat });
+    setNewIncomeCat("");
+    setAddingIncomeCat(false);
+  };
+
+  const handleAddExpenseCategory = () => {
+    const cat = newExpenseCat.trim();
+    if (!cat || expenseCategories.includes(cat)) return;
+    const updated = [...expenseCategories, cat];
+    setExpenseCategories(updated);
+    saveCategories(STORAGE_KEY_EXPENSE, updated);
+    setExpenseFormData({ ...expenseFormData, category: cat });
+    setNewExpenseCat("");
+    setAddingExpenseCat(false);
   };
 
   const handleDeleteExpense = async (id: number) => {
@@ -334,16 +365,40 @@ export default function AccountingPage() {
                       className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/50 focus:ring-emerald-500"
                     />
                   </div>
-                  <div>
-                    <select
-                      value={incomeFormData.category}
-                      onChange={(e) => setIncomeFormData({ ...incomeFormData, category: e.target.value })}
-                      className="flex h-11 w-full rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-emerald-800/50 appearance-none cursor-pointer"
-                    >
-                      {INCOME_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
-                      ))}
-                    </select>
+                  <div className="relative">
+                    <div className="flex gap-1">
+                      <select
+                        value={incomeFormData.category}
+                        onChange={(e) => {
+                          if (e.target.value === "__add__") {
+                            setAddingIncomeCat(true);
+                          } else {
+                            setIncomeFormData({ ...incomeFormData, category: e.target.value });
+                          }
+                        }}
+                        className="flex-1 h-11 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-emerald-800/50 appearance-none cursor-pointer"
+                      >
+                        {incomeCategories.map((cat) => (
+                          <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
+                        ))}
+                        <option value="__add__" className="bg-white dark:bg-slate-900 text-emerald-600">+ Añadir categoría</option>
+                      </select>
+                    </div>
+                    {addingIncomeCat && (
+                      <div className="flex gap-1 mt-1">
+                        <input
+                          type="text"
+                          value={newIncomeCat}
+                          onChange={(e) => setNewIncomeCat(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddIncomeCategory(); } }}
+                          placeholder="Nueva categoría..."
+                          className="flex-1 h-9 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                          autoFocus
+                        />
+                        <button type="button" onClick={handleAddIncomeCategory} className="h-9 w-9 flex items-center justify-center rounded-lg bg-emerald-500 text-white"><Check className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => { setAddingIncomeCat(false); setNewIncomeCat(""); }} className="h-9 w-9 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500"><X className="w-4 h-4" /></button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Input
@@ -402,16 +457,40 @@ export default function AccountingPage() {
                       className="bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/50 focus:ring-rose-500"
                     />
                   </div>
-                  <div>
-                    <select
-                      value={expenseFormData.category}
-                      onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
-                      className="flex h-11 w-full rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-rose-800/50 appearance-none cursor-pointer"
-                    >
-                      {EXPENSE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
-                      ))}
-                    </select>
+                  <div className="relative">
+                    <div className="flex gap-1">
+                      <select
+                        value={expenseFormData.category}
+                        onChange={(e) => {
+                          if (e.target.value === "__add__") {
+                            setAddingExpenseCat(true);
+                          } else {
+                            setExpenseFormData({ ...expenseFormData, category: e.target.value });
+                          }
+                        }}
+                        className="flex-1 h-11 rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all dark:border-rose-800/50 appearance-none cursor-pointer"
+                      >
+                        {expenseCategories.map((cat) => (
+                          <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">{cat}</option>
+                        ))}
+                        <option value="__add__" className="bg-white dark:bg-slate-900 text-rose-600">+ Añadir categoría</option>
+                      </select>
+                    </div>
+                    {addingExpenseCat && (
+                      <div className="flex gap-1 mt-1">
+                        <input
+                          type="text"
+                          value={newExpenseCat}
+                          onChange={(e) => setNewExpenseCat(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddExpenseCategory(); } }}
+                          placeholder="Nueva categoría..."
+                          className="flex-1 h-9 rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                          autoFocus
+                        />
+                        <button type="button" onClick={handleAddExpenseCategory} className="h-9 w-9 flex items-center justify-center rounded-lg bg-rose-500 text-white"><Check className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => { setAddingExpenseCat(false); setNewExpenseCat(""); }} className="h-9 w-9 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500"><X className="w-4 h-4" /></button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Input
