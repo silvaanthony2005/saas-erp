@@ -29,8 +29,9 @@ export function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
+      className="h-full"
     >
-      <Card className="flex items-center gap-5 p-6 group hover:border-blue-200 transition-colors">
+      <Card className="flex items-center gap-5 p-6 group hover:border-blue-200 transition-colors h-full">
         <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", color)}>
           <Icon className="w-7 h-7" />
         </div>
