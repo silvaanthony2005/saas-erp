@@ -57,6 +57,9 @@ frontend/dist/
 Thumbs.db
 desktop.ini
 
+# opencode config (contains API keys)
+opencode.json
+
 # Misc
 *.bak
 *.tmp
