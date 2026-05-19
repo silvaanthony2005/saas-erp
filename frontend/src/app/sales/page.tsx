@@ -7,7 +7,7 @@ import { salesService, Sale } from "@/services/businessServices";
 import { Search, ChevronDown, ChevronUp, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatNumber } from "@/lib/format";
-import { formatBS, formatUSD, convertToBS } from "@/lib/currency";
+import { formatBS, formatUSD } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;

@@ -8,7 +8,7 @@ from fastapi import HTTPException
 class HRService:
     @staticmethod
     def create_employee(db: Session, employee_data: EmployeeCreate):
-        db_employee = Employee(**employee_data.dict())
+        db_employee = Employee(**employee_data.model_dump())
         db.add(db_employee)
         db.commit()
         db.refresh(db_employee)
@@ -28,7 +28,7 @@ class HRService:
         net_salary = gross_salary - payroll_data.deductions
         
         db_payroll = Payroll(
-            **payroll_data.dict(),
+            **payroll_data.model_dump(),
             gross_salary=gross_salary,
             net_salary=net_salary
         )

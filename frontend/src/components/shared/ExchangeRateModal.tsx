@@ -40,6 +40,14 @@ export default function ExchangeRateModal() {
     fetchRate();
   }, []);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    if (isOpen) window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -68,11 +76,14 @@ export default function ExchangeRateModal() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-2xl max-w-md w-full border border-red-500">
-        <h2 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
-          ⚠️ Tasa de Cambio Requerida
-        </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-2xl max-w-md w-full border border-red-500" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">
+            ⚠️ Tasa de Cambio Requerida
+          </h2>
+          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
+        </div>
         <p className="mb-6 text-slate-600 dark:text-slate-300">
           No se pudo sincronizar la tasa oficial del BCV automáticamente o la tasa actual ha expirado. 
           Por favor, ingrese la tasa del día manualmente para continuar operando.

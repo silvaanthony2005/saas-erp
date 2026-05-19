@@ -9,7 +9,7 @@ import { Package, Plus, Search, Filter, Edit, Trash2, X, AlertCircle, ImagePlus,
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { formatBS, formatUSD, convertToBS } from "@/lib/currency";
+import { formatBS, formatUSD } from "@/lib/currency";
 import { InventoryItem, InventoryItemInput, Category, categoryService } from "@/services/businessServices";
 import { useExchangeRate } from "@/hooks/useExchangeRate";
 

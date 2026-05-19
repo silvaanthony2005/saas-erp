@@ -30,7 +30,7 @@ class AccountingService:
 
     @staticmethod
     def create_expense(db: Session, expense_data: ExpenseCreate):
-        db_expense = Expense(**expense_data.dict())
+        db_expense = Expense(**expense_data.model_dump())
         db.add(db_expense)
         db.commit()
         db.refresh(db_expense)

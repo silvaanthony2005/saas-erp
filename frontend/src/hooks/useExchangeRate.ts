@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
 export interface ExchangeRate {
   rate: number;
   source: string;
@@ -13,7 +15,7 @@ export function useExchangeRate() {
 
   const fetchRate = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/config/current');
+      const res = await fetch(`${API_BASE}/config/current`);
       if (res.ok) {
         const data: ExchangeRate = await res.json();
         setRate(data.rate);
