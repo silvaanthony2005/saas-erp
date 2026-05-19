@@ -6,8 +6,8 @@ export interface InventoryItem {
   sku: string;
   description?: string;
   image_url?: string;
-  cost_price: number;
-  sale_price: number;
+  cost_price_bs: number;
+  sale_price_bs: number;
   stock_quantity: number;
   min_stock?: number;
   category_id: number;
@@ -19,8 +19,8 @@ export interface InventoryItemInput {
   sku: string;
   description?: string;
   image_url?: string;
-  cost_price: number;
-  sale_price: number;
+  cost_price_bs: number;
+  sale_price_bs: number;
   stock_quantity: number;
   min_stock?: number;
   category_id: number;
@@ -81,12 +81,13 @@ export interface SaleDetail {
   product_id: number;
   product_name?: string;
   quantity: number;
-  unit_price: number;
+  unit_price_bs: number;
 }
 
 export interface Sale {
   id: number;
-  total_amount: number;
+  total_amount_bs: number;
+  exchange_rate: number;
   payment_method: string;
   timestamp: string;
   customer_name?: string;
@@ -115,7 +116,7 @@ export interface CustomerStats {
 export const customerService = {
   getAll: () => fetchApi<Customer[]>("/customers"),
   getByDni: (dni: string) => fetchApi<Customer>(`/customers/dni/${dni}`),
-  create: (data: Omit<Customer, "id" | "created_at">) => fetchApi<Customer>("/customers", {
+  create: (data: Omit<Customer, "id" | "created_at">) => fetchApi<Customer>("/customers/", {
     method: "POST",
     body: JSON.stringify(data),
   }),
@@ -147,7 +148,7 @@ export { inventoryService as default };
 export interface Expense {
   id: number;
   description: string;
-  amount: number;
+  amount_bs: number;
   category: string;
   timestamp: string;
 }
@@ -155,16 +156,16 @@ export interface Expense {
 export interface Income {
   id: number;
   description: string;
-  amount: number;
+  amount_bs: number;
   category: string;
   timestamp: string;
   entry_type?: string;
 }
 
 export interface FinancialSummary {
-  total_income: number;
-  total_expenses: number;
-  net_profit: number;
+  total_income_bs: number;
+  total_expenses_bs: number;
+  net_profit_bs: number;
   period_start?: string;
   period_end?: string;
 }

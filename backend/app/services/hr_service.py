@@ -40,7 +40,7 @@ class HRService:
         # Registrar como gasto en la tabla expenses para que aparezca en el listado de gastos
         db_expense = Expense(
             description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
-            amount=net_salary,
+            amount_bs=net_salary,
             category="salary"
         )
         db.add(db_expense)
@@ -50,7 +50,7 @@ class HRService:
         AccountingService.register_entry(
             db,
             entry_type="expense",
-            amount=net_salary,
+            amount_bs=net_salary,
             description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
             reference_id=db_payroll.id,
             category="salary"

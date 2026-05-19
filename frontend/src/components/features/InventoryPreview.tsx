@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Package, RefreshCw, AlertCircle, Search } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatNumber } from "@/lib/format";
+import { formatBS } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -89,7 +89,7 @@ export function InventoryPreview() {
                       {item.stock_quantity} uds
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-white text-sm">${formatNumber(item.sale_price)}</td>
+                  <td className="px-6 py-4 font-bold text-slate-900 dark:text-white text-sm">{formatBS(item.sale_price_bs)}</td>
                 </motion.tr>
               ))}
               {items.length === 0 && (

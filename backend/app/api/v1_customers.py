@@ -100,7 +100,7 @@ def get_customer_stats(db: Session = Depends(get_db)):
             Customer.last_name,
             Customer.dni,
             func.count(Transaction.id).label("total_purchases"),
-            func.sum(Transaction.total_amount).label("total_spent")
+            func.sum(Transaction.total_amount_bs).label("total_spent")
         )
         .join(Transaction, Transaction.customer_id == Customer.id)
         .group_by(Customer.id)
@@ -137,7 +137,7 @@ def get_customer_history(customer_id: int, db: Session = Depends(get_db)):
         result.append({
             "id": t.id,
             "date": t.timestamp.isoformat(),
-            "total": t.total_amount,
+            "total": t.total_amount_bs,
             "method": t.payment_method
         })
     return result

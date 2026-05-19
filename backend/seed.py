@@ -2,10 +2,14 @@ from app.core.database import SessionLocal, engine, Base
 from app.models.business import Category, Product, Transaction, TransactionDetail
 from app.models.hr import Employee
 from app.models.accounting import Expense, AccountingEntry
+from app.models.exchange_rate import ExchangeRate
 from datetime import datetime, timedelta
 import random
 
 def seed():
+    # Crear tablas si no existen antes de intentar borrar
+    Base.metadata.create_all(bind=engine)
+    
     db = SessionLocal()
 
     db.query(AccountingEntry).delete()
@@ -33,36 +37,38 @@ def seed():
     personal = db.query(Category).filter(Category.name == "Cuidado Personal").first()
     lacteos = db.query(Category).filter(Category.name == "Lácteos").first()
 
-    productos_data = [
-        ("ALI001", "Harina Pan", 0.80, 1.20, 200, 20, alimentos.id),
-        ("ALI002", "Arroz Integral 1kg", 0.65, 0.95, 150, 15, alimentos.id),
-        ("ALI003", "Pasta Larga 500g", 0.40, 0.70, 180, 10, alimentos.id),
-        ("ALI004", "Aceite Vegetal 1L", 1.80, 2.50, 100, 10, alimentos.id),
-        ("ALI005", "Azúcar Blanca 1kg", 0.50, 0.80, 120, 15, alimentos.id),
-        ("ALI006", "Sal Marina 1kg", 0.30, 0.55, 90, 10, alimentos.id),
-        ("ALI007", "Café Molido 250g", 2.00, 3.50, 60, 8, alimentos.id),
-        ("ALI008", "Galletas Dulces 200g", 0.60, 1.00, 100, 10, alimentos.id),
-        ("BEB001", "Agua Mineral 1.5L", 0.40, 0.65, 300, 25, bebidas.id),
-        ("BEB002", "Jugo de Naranja 1L", 0.90, 1.50, 120, 10, bebidas.id),
-        ("BEB003", "Refresco Cola 355ml", 0.50, 0.85, 250, 20, bebidas.id),
-        ("BEB004", "Cerveza Nacional 330ml", 0.70, 1.20, 200, 15, bebidas.id),
-        ("LMP001", "Detergente Líquido 1L", 1.50, 2.80, 80, 8, limpieza.id),
-        ("LMP002", "Cloro 1L", 0.60, 1.00, 70, 8, limpieza.id),
-        ("LMP003", "Jabón de Barra x3", 0.80, 1.40, 60, 5, limpieza.id),
-        ("LMP004", "Papel Higiénico x4", 1.20, 2.00, 120, 10, limpieza.id),
-        ("PER001", "Shampoo 400ml", 2.50, 4.00, 50, 5, personal.id),
-        ("PER002", "Pasta Dental 120g", 1.00, 1.80, 80, 8, personal.id),
-        ("PER003", "Desodorante Spray", 1.80, 3.20, 40, 5, personal.id),
-        ("LCT001", "Leche Entera 1L", 0.80, 1.20, 150, 15, lacteos.id),
-        ("LCT002", "Yogurt Natural 1kg", 1.20, 2.00, 80, 8, lacteos.id),
-        ("LCT003", "Queso Blanco 500g", 1.80, 3.00, 60, 5, lacteos.id),
-        ("LCT004", "Mantequilla 250g", 1.00, 1.60, 50, 5, lacteos.id),
+    bs_to_usd = 500
+    productos_usd = [
+        ("ALI001", "Harina Pan", 0.79, 1.22, 200, 20, alimentos.id),
+        ("ALI002", "Arroz Integral 1kg", 0.64, 0.94, 150, 15, alimentos.id),
+        ("ALI003", "Pasta Larga 500g", 0.39, 0.69, 180, 10, alimentos.id),
+        ("ALI004", "Aceite Vegetal 1L", 1.78, 2.47, 100, 10, alimentos.id),
+        ("ALI005", "Azúcar Blanca 1kg", 0.49, 0.79, 120, 15, alimentos.id),
+        ("ALI006", "Sal Marina 1kg", 0.30, 0.54, 90, 10, alimentos.id),
+        ("ALI007", "Café Molido 250g", 1.97, 3.45, 60, 8, alimentos.id),
+        ("ALI008", "Galletas Dulces 200g", 0.59, 0.99, 100, 10, alimentos.id),
+        ("BEB001", "Agua Mineral 1.5L", 0.39, 0.64, 300, 25, bebidas.id),
+        ("BEB002", "Jugo de Naranja 1L", 0.89, 1.48, 120, 10, bebidas.id),
+        ("BEB003", "Refresco Cola 355ml", 0.49, 0.84, 250, 20, bebidas.id),
+        ("BEB004", "Cerveza Nacional 330ml", 0.69, 1.18, 200, 15, bebidas.id),
+        ("LMP001", "Detergente Líquido 1L", 1.48, 2.76, 80, 8, limpieza.id),
+        ("LMP002", "Cloro 1L", 0.59, 0.99, 70, 8, limpieza.id),
+        ("LMP003", "Jabón de Barra x3", 0.79, 1.38, 60, 5, limpieza.id),
+        ("LMP004", "Papel Higiénico x4", 1.18, 1.97, 120, 10, limpieza.id),
+        ("PER001", "Shampoo 400ml", 2.47, 3.95, 50, 5, personal.id),
+        ("PER002", "Pasta Dental 120g", 0.99, 1.78, 80, 8, personal.id),
+        ("PER003", "Desodorante Spray", 1.78, 3.16, 40, 5, personal.id),
+        ("LCT001", "Leche Entera 1L", 0.79, 1.18, 150, 15, lacteos.id),
+        ("LCT002", "Yogurt Natural 1kg", 1.18, 1.97, 80, 8, lacteos.id),
+        ("LCT003", "Queso Blanco 500g", 1.78, 2.96, 60, 5, lacteos.id),
+        ("LCT004", "Mantequilla 250g", 0.99, 1.58, 50, 5, lacteos.id),
     ]
 
     productos = []
-    for sku, name, cost, price, stock, min_stock, cat_id in productos_data:
+    for sku, name, cost_usd, price_usd, stock, min_stock, cat_id in productos_usd:
         p = Product(
-            sku=sku, name=name, cost_price=cost, sale_price=price,
+            sku=sku, name=name, cost_price_bs=round(cost_usd * bs_to_usd, 2),
+            sale_price_bs=round(price_usd * bs_to_usd, 2),
             stock_quantity=stock, min_stock=min_stock, category_id=cat_id
         )
         db.add(p)
@@ -70,9 +76,9 @@ def seed():
     db.commit()
 
     empleados = [
-        Employee(first_name="María", last_name="González", email="maria@empresa.com", phone="0412-1112233", position="Cajero", base_salary=450, is_active=True),
-        Employee(first_name="Carlos", last_name="López", email="carlos@empresa.com", phone="0414-4455667", position="Supervisor", base_salary=650, is_active=True),
-        Employee(first_name="Ana", last_name="Martínez", email="ana@empresa.com", phone="0426-7788990", position="Vendedor", base_salary=400, is_active=True),
+        Employee(first_name="María", last_name="González", email="maria@empresa.com", phone="0412-1112233", position="Cajero", base_salary=450 * bs_to_usd, is_active=True),
+        Employee(first_name="Carlos", last_name="López", email="carlos@empresa.com", phone="0414-4455667", position="Supervisor", base_salary=650 * bs_to_usd, is_active=True),
+        Employee(first_name="Ana", last_name="Martínez", email="ana@empresa.com", phone="0426-7788990", position="Vendedor", base_salary=400 * bs_to_usd, is_active=True),
     ]
     db.add_all(empleados)
     db.commit()
@@ -90,14 +96,15 @@ def seed():
                 qty = random.randint(1, 5)
                 if p.stock_quantity - qty >= 0:
                     p.stock_quantity -= qty
-                    subtotal = p.sale_price * qty
+                    subtotal = p.sale_price_bs * qty
                     total += subtotal
                     detalles_venta.append(TransactionDetail(
-                        product_id=p.id, quantity=qty, unit_price=p.sale_price
+                        product_id=p.id, quantity=qty, unit_price_bs=p.sale_price_bs
                     ))
             if detalles_venta:
                 venta = Transaction(
-                    type="sale", total_amount=total,
+                    type="sale", total_amount_bs=total,
+                    exchange_rate=bs_to_usd,
                     timestamp=dia + timedelta(
                         hours=random.randint(7, 20),
                         minutes=random.randint(0, 59)
@@ -107,11 +114,11 @@ def seed():
                 db.add(venta)
 
     gastos = [
-        Expense(description="Alquiler del local", amount=1500, category="rent", timestamp=hoy - timedelta(days=1)),
-        Expense(description="Electricidad", amount=350, category="utilities", timestamp=hoy - timedelta(days=2)),
-        Expense(description="Agua", amount=120, category="utilities", timestamp=hoy - timedelta(days=3)),
-        Expense(description="Pago de nómina", amount=2500, category="salary", timestamp=hoy - timedelta(days=5)),
-        Expense(description="Compra de mercancía", amount=1800, category="supplies", timestamp=hoy - timedelta(days=6)),
+    Expense(description="Alquiler del local", amount_bs=1500 * bs_to_usd, category="rent", timestamp=hoy - timedelta(days=1)),
+    Expense(description="Electricidad", amount_bs=350 * bs_to_usd, category="utilities", timestamp=hoy - timedelta(days=2)),
+    Expense(description="Agua", amount_bs=120 * bs_to_usd, category="utilities", timestamp=hoy - timedelta(days=3)),
+    Expense(description="Pago de nómina", amount_bs=2500 * bs_to_usd, category="salary", timestamp=hoy - timedelta(days=5)),
+    Expense(description="Compra de mercancía", amount_bs=1800 * bs_to_usd, category="supplies", timestamp=hoy - timedelta(days=6)),
     ]
     db.add_all(gastos)
 
@@ -124,7 +131,7 @@ def seed():
             if not existing:
                 entry = AccountingEntry(
                     entry_type="income",
-                    amount=v.total_amount,
+                    amount_bs=v.total_amount_bs,
                     description=f"Venta #{v.id}",
                     category="Ventas",
                     timestamp=v.timestamp,
@@ -139,7 +146,7 @@ def seed():
             if not existing:
                 entry = AccountingEntry(
                     entry_type="expense",
-                    amount=e.amount,
+                    amount_bs=e.amount_bs,
                     description=f"Gasto: {e.description}",
                     category=e.category,
                     timestamp=e.timestamp,

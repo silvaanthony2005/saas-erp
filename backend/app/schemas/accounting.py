@@ -4,7 +4,7 @@ from typing import List, Optional
 
 class ExpenseBase(BaseModel):
     description: str
-    amount: float
+    amount_bs: float
     category: str
 
 class ExpenseCreate(ExpenseBase):
@@ -18,7 +18,7 @@ class ExpenseResponse(ExpenseBase):
 
 class IncomeBase(BaseModel):
     description: str
-    amount: float
+    amount_bs: float
     category: str
 
 class IncomeCreate(IncomeBase):
@@ -31,8 +31,8 @@ class IncomeResponse(IncomeBase):
         from_attributes = True
 
 class FinancialSummary(BaseModel):
-    total_income: float
-    total_expenses: float
-    net_profit: float
+    total_income_bs: float
+    total_expenses_bs: float
+    net_profit_bs: float
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None

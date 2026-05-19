@@ -9,6 +9,7 @@ import { Plus, Search, Trash2, TrendingUp, TrendingDown, Wallet, ArrowUpRight, A
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { formatBS } from "@/lib/currency";
 
 const PAGE_SIZE = 20;
 
@@ -44,13 +45,13 @@ export default function AccountingPage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [incomeFormData, setIncomeFormData] = useState({
     description: "",
-    amount: "",
+    amount_bs: "",
     category: "Ventas",
     timestamp: new Date().toISOString().split("T")[0],
   });
   const [expenseFormData, setExpenseFormData] = useState({
     description: "",
-    amount: "",
+    amount_bs: "",
     category: "Otros",
     timestamp: new Date().toISOString().split("T")[0],
   });
@@ -89,13 +90,13 @@ export default function AccountingPage() {
     try {
       await accountingService.createIncome({
         description: incomeFormData.description,
-        amount: parseFloat(incomeFormData.amount),
+        amount_bs: parseFloat(incomeFormData.amount_bs),
         category: incomeFormData.category,
         timestamp: incomeFormData.timestamp,
       });
       setIncomeFormData({
         description: "",
-        amount: "",
+        amount_bs: "",
         category: "Ventas",
         timestamp: new Date().toISOString().split("T")[0],
       });
@@ -111,13 +112,13 @@ export default function AccountingPage() {
     try {
       await accountingService.createExpense({
         description: expenseFormData.description,
-        amount: parseFloat(expenseFormData.amount),
+        amount_bs: parseFloat(expenseFormData.amount_bs),
         category: expenseFormData.category,
         timestamp: expenseFormData.timestamp,
       });
       setExpenseFormData({
         description: "",
-        amount: "",
+        amount_bs: "",
         category: "Otros",
         timestamp: new Date().toISOString().split("T")[0],
       });
@@ -207,7 +208,7 @@ export default function AccountingPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Ingresos</span>
             </div>
             <p className="text-xl font-black text-emerald-700 dark:text-emerald-300">
-              ${summary ? formatNumber(summary.total_income) : "0"}
+              {summary ? formatBS(summary.total_income_bs) : "Bs. 0"}
             </p>
             <p className="text-[10px] font-medium text-emerald-600/60 mt-1">Total registrado</p>
           </CardContent>
@@ -222,7 +223,7 @@ export default function AccountingPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-rose-600/60">Gastos</span>
             </div>
             <p className="text-xl font-black text-rose-700 dark:text-rose-300">
-              ${summary ? formatNumber(summary.total_expenses) : "0"}
+              {summary ? formatBS(summary.total_expenses_bs) : "Bs. 0"}
             </p>
             <p className="text-[10px] font-medium text-rose-600/60 mt-1">Total registrado</p>
           </CardContent>
@@ -230,7 +231,7 @@ export default function AccountingPage() {
 
         <Card className={cn(
           "border-none shadow-xl dark:shadow-none",
-          summary && summary.net_profit >= 0
+          summary && summary.net_profit_bs >= 0
             ? "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/10"
             : "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/10"
         )}>
@@ -238,29 +239,29 @@ export default function AccountingPage() {
             <div className="flex items-center justify-between mb-3">
               <div className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center",
-                summary && summary.net_profit >= 0 ? "bg-emerald-500/10" : "bg-rose-500/10"
+                summary && summary.net_profit_bs >= 0 ? "bg-emerald-500/10" : "bg-rose-500/10"
               )}>
                 <Wallet className={cn(
                   "w-5 h-5",
-                  summary && summary.net_profit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                  summary && summary.net_profit_bs >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                 )} />
               </div>
               <span className={cn(
                 "text-[10px] font-black uppercase tracking-widest",
-                summary && summary.net_profit >= 0 ? "text-emerald-600/60" : "text-rose-600/60"
+                summary && summary.net_profit_bs >= 0 ? "text-emerald-600/60" : "text-rose-600/60"
               )}>Balance</span>
             </div>
             <p className={cn(
               "text-xl font-black",
-              summary && summary.net_profit >= 0
+              summary && summary.net_profit_bs >= 0
                 ? "text-emerald-700 dark:text-emerald-300"
                 : "text-rose-700 dark:text-rose-300"
             )}>
-              ${summary ? formatNumber(summary.net_profit) : "0"}
+              {summary ? formatBS(summary.net_profit_bs) : "Bs. 0"}
             </p>
             <p className={cn(
               "text-[10px] font-medium mt-1",
-              summary && summary.net_profit >= 0 ? "text-emerald-600/60" : "text-rose-600/60"
+              summary && summary.net_profit_bs >= 0 ? "text-emerald-600/60" : "text-rose-600/60"
             )}>Beneficio neto</p>
           </CardContent>
         </Card>
@@ -313,8 +314,8 @@ export default function AccountingPage() {
                       step="0.01"
                       min="0"
                       placeholder="Monto"
-                      value={incomeFormData.amount}
-                      onChange={(e) => setIncomeFormData({ ...incomeFormData, amount: e.target.value })}
+                      value={incomeFormData.amount_bs}
+                      onChange={(e) => setIncomeFormData({ ...incomeFormData, amount_bs: e.target.value })}
                       required
                       className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/50 focus:ring-emerald-500"
                     />
@@ -381,8 +382,8 @@ export default function AccountingPage() {
                       step="0.01"
                       min="0"
                       placeholder="Monto"
-                      value={expenseFormData.amount}
-                      onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+                      value={expenseFormData.amount_bs}
+                      onChange={(e) => setExpenseFormData({ ...expenseFormData, amount_bs: e.target.value })}
                       required
                       className="bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/50 focus:ring-rose-500"
                     />
@@ -499,7 +500,7 @@ export default function AccountingPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                          +${formatNumber(income.amount)}
+                          {formatBS(income.amount_bs)}
                         </td>
                         <td className="px-4 py-4 text-right">
                           <Button
@@ -553,7 +554,7 @@ export default function AccountingPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right font-black text-rose-600 dark:text-rose-400 text-sm">
-                          -${formatNumber(expense.amount)}
+                          {formatBS(expense.amount_bs)}
                         </td>
                         <td className="px-4 py-4 text-right">
                           <Button

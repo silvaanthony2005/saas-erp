@@ -20,8 +20,8 @@ def get_dashboard(db: Session = Depends(get_db)):
     week_ago = today - timedelta(days=6)
     
     # Stats
-    total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount), 0)).filter(Transaction.type == "sale").scalar() or 0
-    total_expenses = db.query(func.coalesce(func.sum(Expense.amount), 0)).scalar() or 0
+    total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(Transaction.type == "sale").scalar() or 0
+    total_expenses = db.query(func.coalesce(func.sum(Expense.amount_bs), 0)).scalar() or 0
     net_profit = total_sales - total_expenses
     
     gross_margin = 0
@@ -37,7 +37,7 @@ def get_dashboard(db: Session = Depends(get_db)):
         day_start = datetime.combine(day, datetime.min.time())
         day_end = datetime.combine(day, datetime.max.time())
         
-        sales = db.query(func.coalesce(func.sum(Transaction.total_amount), 0)).filter(
+        sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(
             Transaction.type == "sale",
             Transaction.timestamp >= day_start,
             Transaction.timestamp <= day_end
@@ -52,7 +52,7 @@ def get_dashboard(db: Session = Depends(get_db)):
     categories = db.query(Category).all()
     sales_by_category = []
     for cat in categories:
-        total = db.query(func.coalesce(func.sum(TransactionDetail.quantity * TransactionDetail.unit_price), 0)).join(
+        total = db.query(func.coalesce(func.sum(TransactionDetail.quantity * TransactionDetail.unit_price_bs), 0)).join(
             Product, TransactionDetail.product_id == Product.id
         ).join(Transaction, TransactionDetail.transaction_id == Transaction.id
         ).filter(
@@ -95,7 +95,7 @@ def get_dashboard(db: Session = Depends(get_db)):
         Product.name,
         Product.sku,
         func.sum(TransactionDetail.quantity).label("total_sold"),
-        func.sum(TransactionDetail.quantity * TransactionDetail.unit_price).label("total_revenue")
+        func.sum(TransactionDetail.quantity * TransactionDetail.unit_price_bs).label("total_revenue")
     ).join(TransactionDetail, TransactionDetail.product_id == Product.id
     ).join(Transaction, TransactionDetail.transaction_id == Transaction.id
     ).filter(Transaction.type == "sale"
@@ -122,7 +122,7 @@ def get_dashboard(db: Session = Depends(get_db)):
             "type": "Venta",
             "description": f"Factura #{sale.id}",
             "time_ago": humanize.naturaltime(datetime.now() - sale.timestamp),
-            "amount": f"+${sale.total_amount:.2f}",
+            "amount": f"+${sale.total_amount_bs:.2f}",
             "color": "text-emerald-500 dark:text-emerald-400"
         })
     
@@ -134,7 +134,7 @@ def get_dashboard(db: Session = Depends(get_db)):
             "type": "Gasto",
             "description": exp.description,
             "time_ago": humanize.naturaltime(datetime.now() - exp.timestamp),
-            "amount": f"-${exp.amount:.2f}",
+            "amount": f"-Bs. {exp.amount_bs:.2f}",
             "color": "text-rose-500 dark:text-rose-400"
         })
     
@@ -168,8 +168,8 @@ def get_dashboard(db: Session = Depends(get_db)):
 
 @router.get("/dashboard/stats")
 def get_stats(db: Session = Depends(get_db)):
-    total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount), 0)).filter(Transaction.type == "sale").scalar() or 0
-    total_expenses = db.query(func.coalesce(func.sum(Expense.amount), 0)).scalar() or 0
+    total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(Transaction.type == "sale").scalar() or 0
+    total_expenses = db.query(func.coalesce(func.sum(Expense.amount_bs), 0)).scalar() or 0
     net_profit = total_sales - total_expenses
     
     gross_margin = 0
@@ -194,7 +194,7 @@ def get_daily_sales(db: Session = Depends(get_db)):
         day_start = datetime.combine(day, datetime.min.time())
         day_end = datetime.combine(day, datetime.max.time())
         
-        sales = db.query(func.coalesce(func.sum(Transaction.total_amount), 0)).filter(
+        sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(
             Transaction.type == "sale",
             Transaction.timestamp >= day_start,
             Transaction.timestamp <= day_end
@@ -211,7 +211,7 @@ def get_sales_by_category(db: Session = Depends(get_db)):
     categories = db.query(Category).all()
     sales_by_category = []
     for cat in categories:
-        total = db.query(func.coalesce(func.sum(TransactionDetail.quantity * TransactionDetail.unit_price), 0)).join(
+        total = db.query(func.coalesce(func.sum(TransactionDetail.quantity * TransactionDetail.unit_price_bs), 0)).join(
             Product, TransactionDetail.product_id == Product.id
         ).join(Transaction, TransactionDetail.transaction_id == Transaction.id
         ).filter(
@@ -246,7 +246,7 @@ def get_top_products(db: Session = Depends(get_db)):
         Product.name,
         Product.sku,
         func.sum(TransactionDetail.quantity).label("total_sold"),
-        func.sum(TransactionDetail.quantity * TransactionDetail.unit_price).label("total_revenue")
+        func.sum(TransactionDetail.quantity * TransactionDetail.unit_price_bs).label("total_revenue")
     ).join(TransactionDetail, TransactionDetail.product_id == Product.id
     ).join(Transaction, TransactionDetail.transaction_id == Transaction.id
     ).filter(Transaction.type == "sale"
@@ -272,7 +272,7 @@ def get_recent_activity(db: Session = Depends(get_db)):
             "type": "Venta",
             "description": f"Factura #{sale.id}",
             "time_ago": humanize.naturaltime(datetime.now() - sale.timestamp),
-            "amount": f"+${sale.total_amount:.2f}",
+            "amount": f"+Bs. {sale.total_amount_bs:.2f}",
             "color": "text-emerald-500 dark:text-emerald-400"
         })
     
@@ -283,7 +283,7 @@ def get_recent_activity(db: Session = Depends(get_db)):
             "type": "Gasto",
             "description": exp.description,
             "time_ago": humanize.naturaltime(datetime.now() - exp.timestamp),
-            "amount": f"-${exp.amount:.2f}",
+            "amount": f"-Bs. {exp.amount_bs:.2f}",
             "color": "text-rose-500 dark:text-rose-400"
         })
     

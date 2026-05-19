@@ -7,6 +7,7 @@ import { salesService, Sale } from "@/services/businessServices";
 import { Search, ChevronDown, ChevronUp, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatNumber } from "@/lib/format";
+import { formatBS, formatUSD, convertToBS } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -48,7 +49,7 @@ export default function SalesPage() {
 
   const filteredSales = sales.filter((s) =>
     `#${s.id}`.includes(searchQuery) ||
-    s.total_amount.toString().includes(searchQuery) ||
+    s.total_amount_bs.toString().includes(searchQuery) ||
     s.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.customer_dni?.includes(searchQuery)
   );
@@ -93,7 +94,7 @@ export default function SalesPage() {
                   <th className="px-6 py-4 w-32">Fecha</th>
                   <th className="px-6 py-4">Cliente / Artículos</th>
                   <th className="px-6 py-4 w-20 text-center">Arts.</th>
-                  <th className="px-6 py-4 w-32 text-right">Total</th>
+                  <th className="px-6 py-4 w-44 text-right">Total</th>
                   <th className="px-6 py-4 w-16 text-center"></th>
                 </tr>
               </thead>
@@ -148,8 +149,15 @@ export default function SalesPage() {
                           {sale.details.reduce((sum, d) => sum + d.quantity, 0)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
-                        ${formatNumber(sale.total_amount)}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400">
+                            {formatUSD(sale.total_amount_bs / (sale.exchange_rate || 1))}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            {formatBS(sale.total_amount_bs)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400">
@@ -178,6 +186,13 @@ export default function SalesPage() {
                                    sale.payment_method === "Card" ? "Tarjeta" : "Efectivo"}
                                 </span>
                               </div>
+                              
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-black uppercase text-slate-400">Tasa de cambio aplicada:</span>
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                  1 USD = {formatBS(sale.exchange_rate || 0)}
+                                </span>
+                              </div>
 
                               <div className="space-y-3">
                                 {sale.details.map((det) => (
@@ -191,13 +206,18 @@ export default function SalesPage() {
                                           {det.product_name || `Producto #${det.product_id}`}
                                         </span>
                                         <span className="text-[10px] text-slate-400 font-medium tracking-tight">
-                                          {det.quantity} unidad{det.quantity > 1 ? 'es' : ''} × ${formatNumber(det.unit_price)}
+                                          {det.quantity} unidad{det.quantity > 1 ? 'es' : ''} × {formatUSD(det.unit_price_bs / (sale.exchange_rate || 1))} ({formatBS(det.unit_price_bs)})
                                         </span>
                                       </div>
                                     </div>
-                                    <span className="font-black text-slate-900 dark:text-white shrink-0">
-                                      ${formatNumber(det.unit_price * det.quantity)}
-                                    </span>
+                                    <div className="flex flex-col items-end shrink-0">
+                                      <span className="font-black text-slate-900 dark:text-white">
+                                        {formatUSD(det.unit_price_bs * det.quantity / (sale.exchange_rate || 1))}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                        {formatBS(det.unit_price_bs * det.quantity)}
+                                      </span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -205,11 +225,17 @@ export default function SalesPage() {
                               <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
                                 <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs">
                                   <span>Subtotal</span>
-                                  <span>${formatNumber(sale.total_amount)}</span>
+                                  <div className="flex flex-col items-end">
+                                  <span>{formatUSD(sale.total_amount_bs / (sale.exchange_rate || 1))}</span>
+                                  <span className="text-[10px]">{formatBS(sale.total_amount_bs)}</span>
+                                  </div>
                                 </div>
                                 <div className="flex justify-between items-center text-lg font-black text-slate-900 dark:text-white">
                                   <span>Total Cobrado</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400 tracking-tighter">${formatNumber(sale.total_amount)}</span>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-emerald-600 dark:text-emerald-400 tracking-tighter">{formatUSD(sale.total_amount_bs / (sale.exchange_rate || 1))}</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{formatBS(sale.total_amount_bs)}</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>

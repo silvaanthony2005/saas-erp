@@ -25,7 +25,9 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
       console.error("Acceso denegado: Licencia inválida o expirada.");
     }
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Error en la petición: ${response.status}`);
+    const error: Error & { status?: number } = new Error(errorData.detail || `Error en la petición: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();

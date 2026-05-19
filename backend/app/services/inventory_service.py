@@ -20,18 +20,18 @@ class InventoryService:
 
     @staticmethod
     def create_product(db: Session, product: ProductCreate):
-        db_product = Product(**product.dict())
+        db_product = Product(**product.model_dump())
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
         
         # Registrar automáticamente el costo de adquisición en contabilidad
-        total_cost = db_product.cost_price * db_product.stock_quantity
-        if total_cost > 0:
+        total_cost_bs = db_product.cost_price_bs * db_product.stock_quantity
+        if total_cost_bs > 0:
             AccountingService.register_entry(
                 db,
                 entry_type="expense",
-                amount=total_cost,
+                amount_bs=total_cost_bs,
                 description=f"Adquisición inicial de inventario: {db_product.name} ({db_product.stock_quantity} unidades)",
                 category="Inventory",
                 reference_id=db_product.id
@@ -47,12 +47,12 @@ class InventoryService:
             
             # Si es un incremento de stock (compra/entrada), registrar como gasto
             if quantity_change > 0:
-                total_cost = product.cost_price * quantity_change
-                if total_cost > 0:
+                total_cost_bs = product.cost_price_bs * quantity_change
+                if total_cost_bs > 0:
                     AccountingService.register_entry(
                         db,
                         entry_type="expense",
-                        amount=total_cost,
+                        amount_bs=total_cost_bs,
                         description=f"Ajuste de entrada de inventario: {product.name} (+{quantity_change} unidades)",
                         category="Inventory",
                         reference_id=product.id
@@ -79,7 +79,7 @@ class InventoryService:
         db_product = db.query(Product).filter(Product.id == product_id).first()
         if not db_product:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
-        update_data = product.dict(exclude_unset=True)
+        update_data = product.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_product, key, value)
         db.commit()

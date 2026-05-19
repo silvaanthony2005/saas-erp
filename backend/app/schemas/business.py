@@ -6,8 +6,8 @@ class ProductBase(BaseModel):
     name: str
     description: Optional[str] = None
     image_url: Optional[str] = None
-    cost_price: float
-    sale_price: float
+    cost_price_bs: float
+    sale_price_bs: float
     stock_quantity: int
     min_stock: int = 5
     category_id: int
@@ -19,8 +19,8 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
-    cost_price: Optional[float] = None
-    sale_price: Optional[float] = None
+    cost_price_bs: Optional[float] = None
+    sale_price_bs: Optional[float] = None
     stock_quantity: Optional[int] = None
     min_stock: Optional[int] = None
 
@@ -33,7 +33,7 @@ class ProductResponse(ProductBase):
 
     @classmethod
     def from_orm_with_category(cls, product):
-        data = cls.from_orm(product).dict()
+        data = cls.model_validate(product).model_dump()
         data["category_name"] = product.category.name if product.category else None
         return cls(**data)
 

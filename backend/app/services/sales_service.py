@@ -4,14 +4,19 @@ from app.models.business import Transaction, TransactionDetail, Product, Custome
 from app.models.accounting import AccountingEntry
 from app.schemas.sales import SaleCreate
 from app.services.inventory_service import InventoryService
+from app.services.exchange_rate_service import ExchangeRateService
 
 
 class SalesService:
     @staticmethod
     def create_sale(db: Session, sale_data: SaleCreate):
         try:
-            total_amount = 0.0
+            total_amount_bs = 0.0
             details_to_create = []
+
+            # Obtener tasa actual para guardarla en la venta
+            current_rate_obj = ExchangeRateService.get_current_rate(db)
+            exchange_rate = current_rate_obj.rate if current_rate_obj else 1.0
 
             # Validar cliente si se proporciona
             if sale_data.customer_id:
@@ -32,21 +37,22 @@ class SalesService:
                 
                 product.stock_quantity -= item.quantity
                 
-                line_total = item.unit_price * item.quantity
-                total_amount += line_total
+                line_total_bs = item.unit_price_bs * item.quantity
+                total_amount_bs += line_total_bs
                 
                 details_to_create.append(
                     TransactionDetail(
                         product_id=item.product_id,
                         quantity=item.quantity,
-                        unit_price=item.unit_price,
+                        unit_price_bs=item.unit_price_bs,
                         product_name=product.name
                     )
                 )
 
             db_sale = Transaction(
                 type="sale",
-                total_amount=total_amount,
+                total_amount_bs=total_amount_bs,
+                exchange_rate=exchange_rate,
                 payment_method=sale_data.payment_method or "Cash",
                 customer_id=sale_data.customer_id,
                 details=details_to_create
@@ -56,7 +62,7 @@ class SalesService:
 
             income_entry = AccountingEntry(
                 entry_type="income",
-                amount=total_amount,
+                amount_bs=total_amount_bs,
                 description=f"Venta #{db_sale.id} ({db_sale.payment_method})",
                 category="Ventas",
                 reference_id=db_sale.id
@@ -83,7 +89,8 @@ class SalesService:
     @staticmethod
     def get_sale_by_id(db: Session, sale_id: int):
         sale = db.query(Transaction).filter(Transaction.id == sale_id, Transaction.type == "sale").first()
-        if sale and sale.customer:
-            sale.customer_name = f"{sale.customer.first_name} {sale.customer.last_name}"
-            sale.customer_dni = sale.customer.dni
+        if sale:
+            if sale.customer:
+                sale.customer_name = f"{sale.customer.first_name} {sale.customer.last_name}"
+                sale.customer_dni = sale.customer.dni
         return sale

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button"
 import { ShoppingCart, Search, Trash2, Plus, Minus, CreditCard, Banknote, AlertTriangle, CheckCircle2, Loader2, RefreshCcw, Info } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { formatNumber } from "@/lib/format"
+import { formatBS, formatUSD, convertToBS } from "@/lib/currency"
+import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { cn } from "@/lib/utils"
 import { InventoryItem, salesService, inventoryService, customerService, Customer } from "@/services/businessServices"
 import { User, UserPlus } from "lucide-react"
@@ -29,6 +31,7 @@ export default function POSPage() {
   const [shakeProductId, setShakeProductId] = useState<number | null>(null)
   const [checkingOut, setCheckingOut] = useState(false)
   const [loadingAll, setLoadingAll] = useState(false)
+  const { rate: currentExchangeRate } = useExchangeRate()
   const toastIdRef = useRef(0)
 
   // Cliente
@@ -149,7 +152,7 @@ export default function POSPage() {
     }))
   }
 
-  const total = cart.reduce((acc, item) => acc + (item.sale_price * item.quantity), 0)
+  const total_bs = cart.reduce((acc, item) => acc + (item.sale_price_bs * item.quantity), 0)
 
   const handleDniSearch = async (e?: React.KeyboardEvent) => {
     if ((!e || e.key === "Enter") && dni) {
@@ -190,8 +193,9 @@ export default function POSPage() {
       setShowCustomerModal(false)
       showToast("Cliente registrado correctamente", "success")
       setCustomerForm({ first_name: "", last_name: "", phone: "", address: "" })
-    } catch (err) {
-      showToast("Error al registrar cliente", "error")
+    } catch (err: any) {
+      console.error("Error creating customer:", err?.message || err)
+      showToast(err?.status === 400 ? "El cliente ya existe" : "Error al registrar cliente", "error")
     }
   }
 
@@ -226,11 +230,11 @@ export default function POSPage() {
         details: cart.map(item => ({
           product_id: item.id,
           quantity: item.quantity,
-          unit_price: item.sale_price
+          unit_price_bs: item.sale_price_bs
         }))
       })
       const count = cart.reduce((sum, item) => sum + item.quantity, 0)
-      showToast(`Venta completada: ${count} artículos por $${formatNumber(total)}`, "success")
+      showToast(`Venta completada: ${count} artículos por ${formatUSD(total_bs / currentExchangeRate)}`, "success")
       setCart([])
       setSelectedCustomer(null)
       setDni("")
@@ -342,7 +346,7 @@ export default function POSPage() {
                 <h4 className="font-bold text-slate-900 dark:text-white mb-1 line-clamp-1">{item.name}</h4>
                 <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-widest">{item.sku}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-black">${formatNumber(item.sale_price)}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black">{formatUSD(item.sale_price_bs / currentExchangeRate)}</span>
                   <span className={cn("text-[10px] font-bold px-2 py-1 rounded-lg", item.stock_quantity > 0 ? "bg-slate-100 dark:bg-slate-800 text-slate-500" : "bg-rose-100 text-rose-500")}>
                     {item.stock_quantity} uds
                   </span>
@@ -455,7 +459,7 @@ export default function POSPage() {
                   )}
                   <div className="flex-1">
                     <p className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{item.name}</p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-black">${formatNumber(item.sale_price * item.quantity)}</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-black">{formatBS(item.sale_price_bs * item.quantity)}</p>
                   </div>
 <div className="flex items-center gap-2">
                       <Button 
@@ -504,16 +508,23 @@ export default function POSPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-slate-500 font-medium">
                 <span>Subtotal</span>
-                <span>${(total * 0.84).toFixed(2)}</span>
+                <span>{formatBS(total_bs / 1.16)}</span>
               </div>
               <div className="flex justify-between text-sm text-slate-500 font-medium">
                 <span>IVA (16%)</span>
-                <span>${(total * 0.16).toFixed(2)}</span>
+                <span>{formatBS(total_bs - total_bs / 1.16)}</span>
               </div>
-              <div className="flex justify-between text-2xl font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
-                <span>TOTAL</span>
-                <span>${formatNumber(total)}</span>
-              </div>
+              <div className="flex justify-between items-end pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-xl font-black text-slate-900 dark:text-white">TOTAL</span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                      {formatBS(total_bs)}
+                    </span>
+                    <span className="text-sm font-bold text-slate-500">
+                      {formatUSD(total_bs / currentExchangeRate)}
+                    </span>
+                  </div>
+                </div>
             </div>
             
             <div className="grid grid-cols-2 gap-3">

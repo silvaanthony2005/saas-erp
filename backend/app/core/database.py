@@ -4,8 +4,11 @@ from sqlalchemy import create_engine
 import os
 
 # En una app real, esto iría en AppData
-DB_FILE = "database.db"
-SQLALCHEMY_DATABASE_URL = f"sqlite:///./{DB_FILE}"
+# Obtenemos la raíz del proyecto (un nivel arriba de /backend)
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
+DB_FILE = os.path.join(PROJECT_ROOT, "database.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}

@@ -5,7 +5,7 @@ from datetime import datetime
 class SaleDetailBase(BaseModel):
     product_id: int
     quantity: int
-    unit_price: float
+    unit_price_bs: float
 
 class SaleDetailCreate(SaleDetailBase):
     pass
@@ -17,7 +17,7 @@ class SaleDetailResponse(SaleDetailBase):
         from_attributes = True
 
 class SaleBase(BaseModel):
-    total_amount: float
+    total_amount_bs: float
     payment_method: Optional[str] = "Cash"
 
 class SaleCreate(BaseModel):
@@ -28,6 +28,7 @@ class SaleCreate(BaseModel):
 class SaleResponse(SaleBase):
     id: int
     timestamp: datetime
+    exchange_rate: Optional[float] = 1.0
     customer_name: Optional[str] = None
     customer_dni: Optional[str] = None
     details: List[SaleDetailResponse]

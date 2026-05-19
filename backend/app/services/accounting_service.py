@@ -6,22 +6,20 @@ from app.schemas.accounting import ExpenseCreate, IncomeCreate
 
 class AccountingService:
     @staticmethod
-    def register_entry(db: Session, entry_type: str, amount: float, description: str, reference_id: int = None, category: str = None):
+    def register_entry(db: Session, entry_type: str, amount_bs: float, description: str, reference_id: int = None, category: str = None):
         entry = AccountingEntry(
             entry_type=entry_type,
-            amount=amount,
+            amount_bs=amount_bs,
             description=description,
             reference_id=reference_id,
             category=category
         )
         db.add(entry)
         
-        # Si es un gasto automático de inventario, también lo registramos en la tabla 'expenses'
-        # para que sea visible en la lista detallada de gastos del frontend.
         if entry_type == "expense":
             expense = Expense(
                 description=description,
-                amount=amount,
+                amount_bs=amount_bs,
                 category=category or "Inventory",
                 timestamp=entry.timestamp
             )
@@ -37,11 +35,10 @@ class AccountingService:
         db.commit()
         db.refresh(db_expense)
         
-        # Registrar automáticamente como salida contable
         AccountingService.register_entry(
             db, 
             entry_type="expense", 
-            amount=db_expense.amount, 
+            amount_bs=db_expense.amount_bs, 
             description=f"Gasto: {db_expense.description}",
             reference_id=db_expense.id,
             category=db_expense.category
@@ -53,7 +50,7 @@ class AccountingService:
     def create_income(db: Session, income_data: IncomeCreate):
         db_income = AccountingEntry(
             entry_type="income",
-            amount=income_data.amount,
+            amount_bs=income_data.amount_bs,
             description=income_data.description,
             category=income_data.category
         )
@@ -81,14 +78,14 @@ class AccountingService:
 
     @staticmethod
     def get_summary(db: Session):
-        total_income = db.query(func.sum(AccountingEntry.amount)).filter(AccountingEntry.entry_type == "income").scalar() or 0.0
+        total_income_bs = db.query(func.sum(AccountingEntry.amount_bs)).filter(AccountingEntry.entry_type == "income").scalar() or 0.0
 
-        total_expenses = db.query(func.sum(AccountingEntry.amount)).filter(AccountingEntry.entry_type == "expense").scalar() or 0.0
+        total_expenses_bs = db.query(func.sum(AccountingEntry.amount_bs)).filter(AccountingEntry.entry_type == "expense").scalar() or 0.0
 
         return {
-            "total_income": total_income,
-            "total_expenses": total_expenses,
-            "net_profit": total_income - total_expenses
+            "total_income_bs": total_income_bs,
+            "total_expenses_bs": total_expenses_bs,
+            "net_profit_bs": total_income_bs - total_expenses_bs
         }
 
     @staticmethod

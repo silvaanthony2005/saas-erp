@@ -9,13 +9,15 @@ import { Package, Plus, Search, Filter, Edit, Trash2, X, AlertCircle, ImagePlus,
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { formatBS, formatUSD, convertToBS } from "@/lib/currency";
 import { InventoryItem, InventoryItemInput, Category, categoryService } from "@/services/businessServices";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 
 interface FormErrors {
   name?: string;
   sku?: string;
-  sale_price?: string;
-  cost_price?: string;
+  sale_price_bs?: string;
+  cost_price_bs?: string;
   stock_quantity?: string;
 }
 
@@ -23,23 +25,25 @@ function validateForm(data: InventoryItemInput): FormErrors {
   const errors: FormErrors = {};
   if (!data.name?.trim()) errors.name = "El nombre es requerido";
   if (!data.sku?.trim()) errors.sku = "El SKU es requerido";
-  if (data.sale_price === undefined || data.sale_price < 0) errors.sale_price = "El precio de venta debe ser un número positivo";
-  if (data.cost_price !== undefined && data.cost_price < 0) errors.cost_price = "El precio de costo debe ser un número positivo";
+  if (data.sale_price_bs === undefined || data.sale_price_bs < 0) errors.sale_price_bs = "El precio de venta debe ser un número positivo";
+  if (data.cost_price_bs !== undefined && data.cost_price_bs < 0) errors.cost_price_bs = "El precio de costo debe ser un número positivo";
   if (data.stock_quantity !== undefined && data.stock_quantity < 0) errors.stock_quantity = "El stock debe ser un número positivo";
   return errors;
 }
 
 const initialFormData: InventoryItemInput = {
   name: "", sku: "", description: "", image_url: "",
-  cost_price: 0, sale_price: 0, stock_quantity: 0, min_stock: 5, category_id: 1,
+  cost_price_bs: 0, sale_price_bs: 0, stock_quantity: 0, min_stock: 5, category_id: 1,
 };
 
 export default function InventoryPage() {
   const {
     items, total, page, pageSize, totalPages, search, categoryId, categories,
-    loading, error, setSearch, setCategoryId, goToPage, refreshInventory,
+    loading, error, setSearch, setCategoryId, goToPage, refreshInventory, loadCategories,
     createItem, updateItem, deleteItem
   } = useInventory();
+
+  const { rate: currentExchangeRate } = useExchangeRate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -85,8 +89,8 @@ export default function InventoryPage() {
     setEditingItem(item);
     setFormData({
       name: item.name, sku: item.sku, description: item.description || "",
-      image_url: item.image_url || "", cost_price: item.cost_price,
-      sale_price: item.sale_price, stock_quantity: item.stock_quantity,
+      image_url: item.image_url || "", cost_price_bs: item.cost_price_bs,
+      sale_price_bs: item.sale_price_bs, stock_quantity: item.stock_quantity,
       min_stock: item.min_stock || 5, category_id: item.category_id,
     });
     setImagePreview(item.image_url || null);
@@ -109,7 +113,7 @@ export default function InventoryPage() {
     setCreatingCategory(true);
     try {
       const newCat = await categoryService.create(newCategoryName);
-      await refreshInventory(); // To refresh category list in hook
+      await loadCategories();
       setFormData(prev => ({ ...prev, category_id: newCat.id }));
       setShowNewCategory(false);
       setNewCategoryName("");
@@ -130,6 +134,7 @@ export default function InventoryPage() {
     if (!editingCategory || !catNameInput.trim()) return;
     try {
       await categoryService.update(editingCategory.id, catNameInput);
+      await loadCategories();
       await refreshInventory();
       setIsCategoryModalOpen(false);
       setEditingCategory(null);
@@ -142,6 +147,7 @@ export default function InventoryPage() {
     if (!confirm("¿Estás seguro de eliminar esta categoría? Solo se eliminará si no tiene productos asociados.")) return;
     try {
       await categoryService.delete(id);
+      await loadCategories();
       await refreshInventory();
     } catch (err: any) {
       alert(err.message || "Error al eliminar la categoría");
@@ -263,9 +269,9 @@ export default function InventoryPage() {
                   <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
                     <th className="px-6 py-4 w-20">Imagen</th>
                     <th className="px-6 py-4">Producto / SKU</th>
-                    <th className="px-6 py-4 w-64 text-center">Categoría</th>
-                    <th className="px-6 py-4 w-24 text-center">Stock</th>
-                    <th className="px-6 py-4 w-28 text-right">Precio Venta</th>
+                    <th className="px-6 py-4 w-40 text-center">Categoría</th>
+                    <th className="px-6 py-4 w-20 text-center">Stock</th>
+                    <th className="px-6 py-4 w-40 text-right">Precio Venta</th>
                     <th className="px-6 py-4 w-24 text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -322,8 +328,15 @@ export default function InventoryPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">
-                        ${formatNumber(item.sale_price)}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-black text-slate-900 dark:text-white">
+                            {formatBS(item.sale_price_bs)}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            {formatUSD(item.sale_price_bs / currentExchangeRate)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -503,13 +516,13 @@ export default function InventoryPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Venta *</label>
-                      <Input type="number" step="0.01" min="0" value={formData.sale_price} onChange={(e) => handleInputChange("sale_price", parseFloat(e.target.value) || 0)} className={formErrors.sale_price ? "border-rose-500 focus:ring-rose-500" : ""} />
-                      {formErrors.sale_price && <p className="text-xs text-rose-500 mt-1">{formErrors.sale_price}</p>}
+                      <Input type="number" step="0.01" min="0" value={formData.sale_price_bs} onChange={(e) => handleInputChange("sale_price_bs", parseFloat(e.target.value) || 0)} className={formErrors.sale_price_bs ? "border-rose-500 focus:ring-rose-500" : ""} />
+                      {formErrors.sale_price_bs && <p className="text-xs text-rose-500 mt-1">{formErrors.sale_price_bs}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Costo</label>
-                      <Input type="number" step="0.01" min="0" value={formData.cost_price} onChange={(e) => handleInputChange("cost_price", parseFloat(e.target.value) || 0)} className={formErrors.cost_price ? "border-rose-500 focus:ring-rose-500" : ""} />
-                      {formErrors.cost_price && <p className="text-xs text-rose-500 mt-1">{formErrors.cost_price}</p>}
+                      <Input type="number" step="0.01" min="0" value={formData.cost_price_bs} onChange={(e) => handleInputChange("cost_price_bs", parseFloat(e.target.value) || 0)} className={formErrors.cost_price_bs ? "border-rose-500 focus:ring-rose-500" : ""} />
+                      {formErrors.cost_price_bs && <p className="text-xs text-rose-500 mt-1">{formErrors.cost_price_bs}</p>}
                     </div>
                   </div>
 
@@ -575,7 +588,7 @@ export default function InventoryPage() {
                       if (!catNameInput.trim()) return;
                       await categoryService.create(catNameInput);
                       setCatNameInput("");
-                      refreshInventory();
+                      await loadCategories();
                     }} className="bg-blue-600">
                       {editingCategory ? "Actualizar" : "Añadir"}
                     </Button>

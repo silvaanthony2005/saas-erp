@@ -97,7 +97,7 @@ export function useInventory() {
   return {
     items, total, page, pageSize, totalPages, search, categoryId, categories,
     loading, error,
-    setSearch, setCategoryId, goToPage, refreshInventory,
+    setSearch, setCategoryId, goToPage, refreshInventory, loadCategories,
     createItem, updateItem, deleteItem
   };
 }

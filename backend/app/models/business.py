@@ -11,8 +11,8 @@ class Product(Base):
     name = Column(String, index=True)
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
-    cost_price = Column(Float, default=0.0)
-    sale_price = Column(Float, default=0.0)
+    cost_price_bs = Column(Float, default=0.0) # Costo en Bs
+    sale_price_bs = Column(Float, default=0.0) # Venta en Bs
     stock_quantity = Column(Integer, default=0)
     min_stock = Column(Integer, default=5)
     
@@ -45,7 +45,8 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     type = Column(String) # "sale", "purchase", "adjustment"
-    total_amount = Column(Float, default=0.0)
+    total_amount_bs = Column(Float, default=0.0) # Monto total en BS
+    exchange_rate = Column(Float, nullable=True) # Tasa BCV al momento de la transacción
     payment_method = Column(String, default="Cash") # "Cash", "Transfer", "Card"
     status = Column(Integer, default=1) # 1: Active, 0: Canceled
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
@@ -60,7 +61,7 @@ class TransactionDetail(Base):
     transaction_id = Column(Integer, ForeignKey("transactions.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer)
-    unit_price = Column(Float)
+    unit_price_bs = Column(Float) # Precio unitario en BS al momento de la venta
     product_name = Column(String, nullable=True) # Snapshot del nombre en el momento de venta
     
     transaction = relationship("Transaction", back_populates="details")
