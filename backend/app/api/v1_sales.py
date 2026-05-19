@@ -7,11 +7,11 @@ from app.services.sales_service import SalesService
 
 router = APIRouter()
 
-@router.post("/", response_model=SaleResponse)
+@router.post("", response_model=SaleResponse)
 def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
     return SalesService.create_sale(db, sale)
 
-@router.get("/", response_model=List[SaleResponse])
+@router.get("", response_model=List[SaleResponse])
 def read_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return SalesService.get_sales(db, skip=skip, limit=limit)
 
