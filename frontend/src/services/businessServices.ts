@@ -116,7 +116,7 @@ export interface CustomerStats {
 export const customerService = {
   getAll: () => fetchApi<Customer[]>("/customers"),
   getByDni: (dni: string) => fetchApi<Customer>(`/customers/dni/${dni}`),
-  create: (data: Omit<Customer, "id" | "created_at">) => fetchApi<Customer>("/customers/", {
+  create: (data: Omit<Customer, "id" | "created_at">) => fetchApi<Customer>("/customers", {
     method: "POST",
     body: JSON.stringify(data),
   }),

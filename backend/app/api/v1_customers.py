@@ -8,7 +8,7 @@ from typing import List
 
 router = APIRouter()
 
-@router.post("/", response_model=CustomerResponse)
+@router.post("", response_model=CustomerResponse)
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     db_customer = db.query(Customer).filter(Customer.dni == customer.dni).first()
     if db_customer:
@@ -75,7 +75,7 @@ def update_customer(customer_id: int, customer_data: CustomerCreate, db: Session
         created_at=db_customer.created_at.isoformat()
     )
 
-@router.get("/", response_model=List[CustomerResponse])
+@router.get("", response_model=List[CustomerResponse])
 def get_customers(db: Session = Depends(get_db)):
     customers = db.query(Customer).all()
     return [
