@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { Users, Plus, Search, Trash2, Edit, X, UserCheck, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/format";
+import { formatUSD } from "@/lib/currency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { hrService, Employee } from "@/services/hrService";
 
 interface FormData {
@@ -40,6 +41,7 @@ export default function HRPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const { rate: currentExchangeRate } = useExchangeRate();
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -188,7 +190,7 @@ export default function HRPage() {
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-violet-600/60">Nómina</span>
             </div>
-            <p className="text-xl font-black text-violet-700 dark:text-violet-300">${formatNumber(totalSalary)}</p>
+            <p className="text-xl font-black text-violet-700 dark:text-violet-300">{formatUSD(totalSalary / currentExchangeRate)}</p>
             <p className="text-[10px] font-medium text-violet-600/60 mt-1">Costo mensual</p>
           </CardContent>
         </Card>
@@ -254,7 +256,7 @@ export default function HRPage() {
                       <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{employee.position}</span>
                     </td>
                     <td className="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
-                      ${formatNumber(employee.base_salary)}
+                      {formatUSD(employee.base_salary / currentExchangeRate)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

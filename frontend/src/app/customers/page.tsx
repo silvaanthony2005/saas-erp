@@ -6,7 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Search, Users, Trophy, ShoppingBag, Phone, MapPin, Calendar, ArrowRight, UserPlus, X, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { formatNumber } from "@/lib/format"
+import { formatUSD } from "@/lib/currency"
+import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { cn } from "@/lib/utils"
 
 export default function CustomersPage() {
@@ -14,6 +15,7 @@ export default function CustomersPage() {
   const [stats, setStats] = useState<CustomerStats[]>([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+  const { rate: currentExchangeRate } = useExchangeRate()
   
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -171,7 +173,7 @@ export default function CustomersPage() {
                   {topCustomer.total_purchases} COMPRAS
                 </span>
                 <span className="text-slate-400 text-[10px] font-bold">
-                  ${formatNumber(topCustomer.total_spent)} invertidos
+                  {formatUSD(topCustomer.total_spent / currentExchangeRate)} invertidos
                 </span>
               </div>
             </CardContent>
@@ -435,7 +437,7 @@ export default function CustomersPage() {
                       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                         <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Invertido</p>
                         <p className="text-2xl font-black text-emerald-500">
-                          ${formatNumber(stats.find(s => s.name.includes(selectedCustomer.first_name))?.total_spent || 0)}
+                          {formatUSD((stats.find(s => s.name.includes(selectedCustomer.first_name))?.total_spent || 0) / currentExchangeRate)}
                         </p>
                       </div>
                       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
@@ -463,7 +465,7 @@ export default function CustomersPage() {
                               <span className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">{t.method}</span>
                             </div>
                             <p className="text-sm font-black text-slate-900 dark:text-white mt-1">
-                              ${formatNumber(t.total)}
+                              {formatUSD(t.total / currentExchangeRate)}
                             </p>
                           </div>
                         ))
