@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { dashboardService, type DashboardData, type LowStockItem, type TopProduct, type RecentActivity, type SalesByCategory } from "@/services/businessServices";
-import { formatNumber } from "@/lib/format";
+import { formatUSD } from "@/lib/currency";
+import { useExchangeRate } from "@/hooks/useExchangeRate";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { rate: currentExchangeRate } = useExchangeRate();
 
   useEffect(() => {
     const loadData = async () => {
@@ -72,7 +74,7 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             label="Ventas Totales" 
-            value={`$${formatNumber(stats.total_sales)}`} 
+            value={formatUSD(stats.total_sales / currentExchangeRate)} 
             icon={DollarSign} 
             trend=""
             color="bg-gradient-to-br from-blue-600 to-blue-700" 
@@ -80,7 +82,7 @@ export default function DashboardPage() {
           />
           <StatCard 
             label="Gastos Operativos" 
-            value={`$${formatNumber(stats.total_expenses)}`} 
+            value={formatUSD(stats.total_expenses / currentExchangeRate)} 
             icon={Wallet} 
             trend=""
             color="bg-gradient-to-br from-violet-600 to-violet-700" 
@@ -125,7 +127,7 @@ export default function DashboardPage() {
                       <div key={cat.category} className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="font-semibold text-slate-700 dark:text-slate-300">{cat.category}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">${formatNumber(cat.value)}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{formatUSD(cat.value / currentExchangeRate)}</span>
                         </div>
                         <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <motion.div
@@ -206,7 +208,7 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <PerformanceChart data={dailySales.length > 0 ? dailySales : [{ day: "Sin datos", value: 0 }]} />
+              <PerformanceChart data={dailySales.length > 0 ? dailySales.map(d => ({ ...d, value: d.value / currentExchangeRate })) : [{ day: "Sin datos", value: 0 }]} />
             </motion.div>
           </div>
 
@@ -242,7 +244,7 @@ export default function DashboardPage() {
                               <span className="font-semibold text-slate-900 dark:text-white text-sm truncate" title={product.name}>{product.name}</span>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-bold text-slate-900 dark:text-white text-sm">${formatNumber(product.total_revenue)}</p>
+                              <p className="font-bold text-slate-900 dark:text-white text-sm">{formatUSD(product.total_revenue / currentExchangeRate)}</p>
                               <p className="text-xs text-slate-400 dark:text-slate-500">{product.total_sold} ventas</p>
                             </div>
                           </div>

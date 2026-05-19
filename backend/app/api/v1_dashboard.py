@@ -122,7 +122,7 @@ def get_dashboard(db: Session = Depends(get_db)):
             "type": "Venta",
             "description": f"Factura #{sale.id}",
             "time_ago": humanize.naturaltime(datetime.now() - sale.timestamp),
-            "amount": f"+${sale.total_amount_bs:.2f}",
+            "amount": f"+Bs. {sale.total_amount_bs:.2f}",
             "color": "text-emerald-500 dark:text-emerald-400"
         })
     
