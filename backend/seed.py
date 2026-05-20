@@ -3,7 +3,8 @@ from app.models.business import Category, Product, Transaction, TransactionDetai
 from app.models.hr import Employee
 from app.models.accounting import Expense, AccountingEntry
 from app.models.exchange_rate import ExchangeRate
-from datetime import datetime, timedelta
+from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDetail, AccountsPayable, PaymentSchedule, InventoryMovement, CostingConfig
+from datetime import datetime, timedelta, date
 import random
 
 def seed():
@@ -12,6 +13,12 @@ def seed():
     
     db = SessionLocal()
 
+    db.query(PaymentSchedule).delete()
+    db.query(AccountsPayable).delete()
+    db.query(PurchaseInvoiceDetail).delete()
+    db.query(PurchaseInvoice).delete()
+    db.query(InventoryMovement).delete()
+    db.query(Supplier).delete()
     db.query(AccountingEntry).delete()
     db.query(TransactionDetail).delete()
     db.query(Transaction).delete()
@@ -19,6 +26,7 @@ def seed():
     db.query(Category).delete()
     db.query(Employee).delete()
     db.query(Expense).delete()
+    db.query(CostingConfig).delete()
     db.commit()
 
     categorias = [
@@ -155,12 +163,68 @@ def seed():
                 db.add(entry)
         db.commit()
 
+        # Proveedores
+        proveedores = [
+            Supplier(company_name="Distribuidora Alimentos C.A.", contact_name="Pedro Ramírez", email="pedro@dalimentos.com", phone="0412-1112233", dni_rif="J-12345678-0"),
+            Supplier(company_name="Bebidas del Centro S.R.L.", contact_name="Laura Mendoza", email="laura@bebidascentro.com", phone="0414-4455667", dni_rif="J-23456789-1"),
+            Supplier(company_name="Limpieza Total C.A.", contact_name="Carlos Sánchez", email="carlos@limpiezatotal.com", phone="0426-7788990", dni_rif="J-34567890-2"),
+        ]
+        db.add_all(proveedores)
+        db.commit()
+
+        # Agregar compras de ejemplo para algunos productos
+        prov1 = proveedores[0]
+        prov2 = proveedores[1]
+        productos_db = db.query(Product).all()
+        hoy = datetime.now()
+
+        compras = [
+            PurchaseInvoice(
+                invoice_number="FAC-PROV-001", supplier_id=prov1.id,
+                subtotal_bs=1500.00, tax_bs=0, total_bs=1500.00,
+                payment_type="cash", status="active",
+                invoice_date=hoy - timedelta(days=10),
+                created_at=hoy - timedelta(days=10),
+                details=[
+                    PurchaseInvoiceDetail(product_id=productos_db[0].id, quantity=50, unit_cost_bs=0.79, subtotal_bs=39.50),
+                    PurchaseInvoiceDetail(product_id=productos_db[1].id, quantity=30, unit_cost_bs=0.64, subtotal_bs=19.20),
+                ]
+            ),
+            PurchaseInvoice(
+                invoice_number="FAC-PROV-002", supplier_id=prov2.id,
+                subtotal_bs=2000.00, tax_bs=0, total_bs=2000.00,
+                payment_type="credit", status="active",
+                invoice_date=hoy - timedelta(days=5),
+                due_date=hoy + timedelta(days=25),
+                created_at=hoy - timedelta(days=5),
+                details=[
+                    PurchaseInvoiceDetail(product_id=productos_db[9].id, quantity=100, unit_cost_bs=0.49, subtotal_bs=49.00),
+                ]
+            ),
+        ]
+        db.add_all(compras)
+        db.commit()
+
+        # Crear CxP para la compra a crédito
+        ap = AccountsPayable(
+            purchase_invoice_id=compras[1].id,
+            total_amount_bs=2000.00,
+            remaining_balance_bs=2000.00,
+            due_date=hoy + timedelta(days=25),
+            status="pending"
+        )
+        db.add(ap)
+        db.commit()
+
         total_ventas = db.query(Transaction).count()
         total_productos = db.query(Product).count()
         total_empleados = db.query(Employee).count()
         total_gastos = db.query(Expense).count()
         total_accounting = db.query(AccountingEntry).count()
-        print(f"Seed completado: {total_ventas} ventas, {total_productos} productos, {total_empleados} empleados, {total_gastos} gastos, {total_accounting} asientos contables")
+        total_proveedores = db.query(Supplier).count()
+        total_compras = db.query(PurchaseInvoice).count()
+        total_cxp = db.query(AccountsPayable).count()
+        print(f"Seed completado: {total_ventas} ventas, {total_productos} productos, {total_empleados} empleados, {total_gastos} gastos, {total_accounting} asientos contables, {total_proveedores} proveedores, {total_compras} compras, {total_cxp} CxP")
     except Exception as e:
         db.rollback()
         print(f"Error: {e}")

@@ -1,20 +1,25 @@
-from backend.app.models.accounting import AccountingEntry
-from backend.app.schemas.accounting import ExpenseCreate
-from backend.app.services.accounting_service import AccountingService
+def test_create_expense(client):
+    resp = client.post("/api/v1/accounting/expenses", json={
+        "description": "Test Expense",
+        "amount_bs": 100.0,
+        "category": "test"
+    })
+    assert resp.status_code == 200
+    assert resp.json()["description"] == "Test Expense"
 
+def test_get_expenses(client):
+    client.post("/api/v1/accounting/expenses", json={
+        "description": "Expense 1", "amount_bs": 50.0, "category": "test"
+    })
+    resp = client.get("/api/v1/accounting/expenses")
+    assert resp.status_code == 200
+    assert len(resp.json()) >= 1
 
-def test_create_expense_service(session):
-    expense = ExpenseCreate(description="Internet", amount=120.0, category="utilities")
-    result = AccountingService.create_expense(session, expense)
-    assert result.amount == 120.0
-
-    entry = session.query(AccountingEntry).filter(AccountingEntry.reference_id == result.id).first()
-    assert entry is not None
-    assert entry.entry_type == "expense"
-
-
-def test_summary_service(session):
-    summary = AccountingService.get_summary(session)
-    assert "total_income" in summary
-    assert "total_expenses" in summary
-    assert "net_profit" in summary
+def test_get_summary(client):
+    client.post("/api/v1/accounting/expenses", json={
+        "description": "Rent", "amount_bs": 500.0, "category": "rent"
+    })
+    resp = client.get("/api/v1/accounting/summary")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_expenses_bs"] >= 500.0

@@ -5,6 +5,8 @@ from app.models.accounting import AccountingEntry
 from app.schemas.sales import SaleCreate
 from app.services.inventory_service import InventoryService
 from app.services.exchange_rate_service import ExchangeRateService
+from app.services.inventory_cost_service import InventoryCostService
+from app.services.accounting_service import AccountingService
 
 
 class SalesService:
@@ -12,18 +14,19 @@ class SalesService:
     def create_sale(db: Session, sale_data: SaleCreate):
         try:
             total_amount_bs = 0.0
+            total_cogs_bs = 0.0
             details_to_create = []
 
-            # Obtener tasa actual para guardarla en la venta
             current_rate_obj = ExchangeRateService.get_current_rate(db)
             exchange_rate = current_rate_obj.rate if current_rate_obj else 1.0
 
-            # Validar cliente si se proporciona
             if sale_data.customer_id:
                 customer = db.query(Customer).filter(Customer.id == sale_data.customer_id).first()
                 if not customer:
                     raise HTTPException(status_code=404, detail="Customer not found")
             
+            costing_method = InventoryCostService.get_costing_method(db)
+
             for item in sale_data.details:
                 product = db.query(Product).filter(Product.id == item.product_id).with_for_update().first()
                 if not product:
@@ -35,7 +38,22 @@ class SalesService:
                         detail=f"Insufficient stock for product {product.name}. Available: {product.stock_quantity}"
                     )
                 
-                product.stock_quantity -= item.quantity
+                if costing_method == "fifo":
+                    cogs = InventoryCostService.consume_fifo_stock(
+                        db, item.product_id, item.quantity, "sale"
+                    )
+                    cogs_unit = cogs["unit_cost_bs"]
+                    cogs_total = cogs["total_cost_bs"]
+                else:
+                    cogs_unit = product.cost_price_bs
+                    cogs_total = cogs_unit * item.quantity
+                    product.stock_quantity -= item.quantity
+                    InventoryCostService.record_outbound_movement(
+                        db, item.product_id, item.quantity,
+                        cogs_unit, cogs_total, "sale"
+                    )
+                
+                total_cogs_bs += cogs_total
                 
                 line_total_bs = item.unit_price_bs * item.quantity
                 total_amount_bs += line_total_bs
@@ -68,6 +86,16 @@ class SalesService:
                 reference_id=db_sale.id
             )
             db.add(income_entry)
+
+            AccountingService.register_entry(
+                db,
+                entry_type="expense",
+                amount_bs=total_cogs_bs,
+                description=f"COGS Venta #{db_sale.id}",
+                category="COGS",
+                reference_id=db_sale.id
+            )
+
             db.commit()
             db.refresh(db_sale)
             return db_sale

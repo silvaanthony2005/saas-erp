@@ -1,15 +1,22 @@
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from backend.app.main import app
-from backend.app.core.database import Base, get_db
-from backend.app.models import business as _business
-from backend.app.models import accounting as _accounting
-from backend.app.models import hr as _hr
-from backend.app.models import core as _core
+from app.core.database import Base, get_db
+from app.core.config import settings
+from app.core.middleware import LicenseMiddleware
+
+from app.models.business import Product, Category, Transaction, TransactionDetail, Customer
+from app.models.accounting import Expense, AccountingEntry
+from app.models.hr import Employee, Payroll
+from app.models.exchange_rate import ExchangeRate
+from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDetail, AccountsPayable, PaymentSchedule, InventoryMovement, CostingConfig
+
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 
@@ -33,6 +40,34 @@ def session_fixture():
 
 @pytest.fixture(name="client")
 def client_fixture(session):
+    app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.add_middleware(LicenseMiddleware)
+
+    app.include_router(v1_inventory.router, prefix=f"{settings.API_V1_STR}/inventory", tags=["inventory"])
+    app.include_router(v1_sales.router, prefix=f"{settings.API_V1_STR}/sales", tags=["sales"])
+    app.include_router(v1_accounting.router, prefix=f"{settings.API_V1_STR}/accounting", tags=["accounting"])
+    app.include_router(v1_hr.router, prefix=f"{settings.API_V1_STR}/hr", tags=["hr"])
+    app.include_router(v1_customers.router, prefix=f"{settings.API_V1_STR}/customers", tags=["customers"])
+    app.include_router(v1_config.router, prefix=f"{settings.API_V1_STR}/config", tags=["config"])
+    app.include_router(v1_dashboard.router, prefix=settings.API_V1_STR, tags=["dashboard"])
+    app.include_router(v1_suppliers.router, prefix=f"{settings.API_V1_STR}/suppliers", tags=["suppliers"])
+    app.include_router(v1_purchases.router, prefix=f"{settings.API_V1_STR}/purchases", tags=["purchases"])
+    app.include_router(v1_accounts_payable.router, prefix=f"{settings.API_V1_STR}/accounts-payable", tags=["accounts-payable"])
+    app.include_router(v1_costing.router, prefix=f"{settings.API_V1_STR}/costing", tags=["costing"])
+
+    @app.get("/")
+    def root():
+        return {"message": "SaaS Backend API is running"}
+
     def get_test_db():
         yield session
 

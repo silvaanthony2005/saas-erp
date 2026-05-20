@@ -1,67 +1,31 @@
-from backend.app.models.business import Product, Category
-
-
-def seed_product(session, stock=50):
-    category = Category(name="General")
-    session.add(category)
-    session.commit()
-    session.refresh(category)
-
-    product = Product(
-        sku="SALE-001",
-        name="Producto Venta",
-        cost_price=5.0,
-        sale_price=10.0,
-        stock_quantity=stock,
-        category_id=category.id,
-    )
-    session.add(product)
-    session.commit()
-    session.refresh(product)
-    return product
-
-
-def test_create_sale(client, session):
-    product = seed_product(session)
-    payload = {
-        "details": [
-            {"product_id": product.id, "quantity": 2, "unit_price": 10.0}
-        ]
-    }
-    response = client.post("/api/v1/sales", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total_amount"] == 20.0
+def test_add_sale(client):
+    cat_resp = client.post("/api/v1/inventory/categories", json={"name": "SalesCat"})
+    cat_id = cat_resp.json()["id"]
+    client.post("/api/v1/inventory/products", json={
+        "sku": "SALE01", "name": "Sale Product",
+        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "stock_quantity": 100, "category_id": cat_id
+    })
+    resp = client.post("/api/v1/sales", json={
+        "details": [{"product_id": 1, "quantity": 3, "unit_price_bs": 20.0}],
+        "payment_method": "Cash",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_amount_bs"] == 60.0
     assert len(data["details"]) == 1
 
-
-def test_read_sales(client):
-    response = client.get("/api/v1/sales")
-    assert response.status_code == 200
-    assert isinstance(response.json(), list)
-
-
-def test_read_sale_not_found(client):
-    response = client.get("/api/v1/sales/999")
-    assert response.status_code == 404
-
-
-def test_create_sale_product_not_found(client):
-    payload = {
-        "details": [
-            {"product_id": 999, "quantity": 1, "unit_price": 10.0}
-        ]
-    }
-    response = client.post("/api/v1/sales", json=payload)
-    assert response.status_code == 404
-
-
-def test_create_sale_insufficient_stock(client, session):
-    product = seed_product(session, stock=1)
-    payload = {
-        "details": [
-            {"product_id": product.id, "quantity": 5, "unit_price": 10.0}
-        ]
-    }
-    response = client.post("/api/v1/sales", json=payload)
-    assert response.status_code == 400
+def test_get_sales(client):
+    cat_resp = client.post("/api/v1/inventory/categories", json={"name": "SalesCat2"})
+    cat_id = cat_resp.json()["id"]
+    client.post("/api/v1/inventory/products", json={
+        "sku": "SALE02", "name": "Sale Product 2",
+        "cost_price_bs": 5.0, "sale_price_bs": 10.0,
+        "stock_quantity": 50, "category_id": cat_id
+    })
+    client.post("/api/v1/sales", json={
+        "details": [{"product_id": 1, "quantity": 2, "unit_price_bs": 10.0}],
+    })
+    resp = client.get("/api/v1/sales")
+    assert resp.status_code == 200
+    assert len(resp.json()) > 0

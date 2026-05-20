@@ -142,6 +142,190 @@ export const salesService = {
   getById: (id: number) => fetchApi<Sale>(`/sales/${id}`),
 };
 
+export interface Supplier {
+  id: number;
+  company_name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  dni_rif: string;
+  is_active: number;
+  created_at: string;
+}
+
+export interface SupplierInput {
+  company_name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  dni_rif: string;
+}
+
+export interface PaginatedSuppliers {
+  suppliers: Supplier[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface PurchaseDetailInput {
+  product_id: number;
+  quantity: number;
+  unit_cost_bs: number;
+}
+
+export interface PurchaseDetail {
+  id: number;
+  product_id: number;
+  product_name?: string;
+  quantity: number;
+  unit_cost_bs: number;
+  subtotal_bs: number;
+}
+
+export interface PurchaseInput {
+  invoice_number: string;
+  supplier_id: number;
+  subtotal_bs: number;
+  tax_bs: number;
+  total_bs: number;
+  exchange_rate?: number;
+  payment_type: string;
+  invoice_date?: string;
+  due_date?: string;
+  notes?: string;
+  details: PurchaseDetailInput[];
+}
+
+export interface Purchase {
+  id: number;
+  invoice_number: string;
+  supplier_id: number;
+  supplier_name?: string;
+  subtotal_bs: number;
+  tax_bs: number;
+  total_bs: number;
+  exchange_rate?: number;
+  payment_type: string;
+  status: string;
+  invoice_date?: string;
+  due_date?: string;
+  notes?: string;
+  created_at: string;
+  details: PurchaseDetail[];
+}
+
+export interface AccountsPayable {
+  id: number;
+  purchase_invoice_id: number;
+  invoice_number?: string;
+  supplier_name?: string;
+  total_amount_bs: number;
+  remaining_balance_bs: number;
+  due_date?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface PaymentInput {
+  accounts_payable_id: number;
+  amount_bs: number;
+  payment_date?: string;
+  payment_method: string;
+  notes?: string;
+}
+
+export interface PaymentSchedule {
+  id: number;
+  accounts_payable_id: number;
+  amount_bs: number;
+  payment_date?: string;
+  payment_method: string;
+  notes?: string;
+  is_paid: number;
+  created_at: string;
+}
+
+export interface InventoryMovement {
+  id: number;
+  product_id: number;
+  product_name?: string;
+  movement_type: string;
+  quantity: number;
+  unit_cost_bs: number;
+  total_cost_bs: number;
+  reference_type: string;
+  reference_id?: number;
+  created_at: string;
+}
+
+export interface CostingConfig {
+  method: string;
+  updated_at: string;
+}
+
+export interface CxPSummary {
+  total_pending_bs: number;
+  total_overdue_bs: number;
+  total_paid_bs: number;
+}
+
+export const supplierService = {
+  getAll: (params?: { skip?: number; limit?: number; search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    return fetchApi<PaginatedSuppliers>(`/suppliers?${query}`);
+  },
+  getById: (id: number) => fetchApi<Supplier>(`/suppliers/${id}`),
+  create: (data: SupplierInput) => fetchApi<Supplier>("/suppliers", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: number, data: SupplierInput) => fetchApi<Supplier>(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  delete: (id: number) => fetchApi<{ message: string }>(`/suppliers/${id}`, { method: "DELETE" }),
+};
+
+export const purchaseService = {
+  getAll: (params?: { skip?: number; limit?: number; supplier_id?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.supplier_id) query.set("supplier_id", String(params.supplier_id));
+    return fetchApi<{ purchases: Purchase[]; total: number; page: number; page_size: number }>(`/purchases?${query}`);
+  },
+  getById: (id: number) => fetchApi<Purchase>(`/purchases/${id}`),
+  create: (data: PurchaseInput) => fetchApi<Purchase>("/purchases", { method: "POST", body: JSON.stringify(data) }),
+  cancel: (id: number) => fetchApi<Purchase>(`/purchases/${id}/cancel`, { method: "POST" }),
+};
+
+export const accountsPayableService = {
+  getAll: (params?: { skip?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.status) query.set("status", params.status);
+    return fetchApi<{ accounts_payable: AccountsPayable[]; total: number; page: number; page_size: number }>(`/accounts-payable?${query}`);
+  },
+  getById: (id: number) => fetchApi<AccountsPayable>(`/accounts-payable/${id}`),
+  makePayment: (data: PaymentInput) => fetchApi<PaymentSchedule>("/accounts-payable/payments", { method: "POST", body: JSON.stringify(data) }),
+  getPayments: (apId: number) => fetchApi<PaymentSchedule[]>(`/accounts-payable/${apId}/payments`),
+  getSummary: () => fetchApi<CxPSummary>("/accounts-payable/summary/overview"),
+  getSupplierBalance: (supplierId: number) => fetchApi<{ supplier_id: number; total_debt_bs: number; active_aps: number }>(`/accounts-payable/supplier/${supplierId}/balance`),
+};
+
+export const costingService = {
+  getMethod: () => fetchApi<CostingConfig>("/costing/method"),
+  updateMethod: (method: string) => fetchApi<CostingConfig>("/costing/method", { method: "PUT", body: JSON.stringify({ method }) }),
+  getKardex: (params?: { product_id?: number; skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.product_id) query.set("product_id", String(params.product_id));
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    return fetchApi<{ movements: InventoryMovement[]; total: number; page: number; page_size: number }>(`/costing/kardex?${query}`);
+  },
+};
+
 export { hrService, type Employee, type Payroll, type PayrollProcessData } from './hrService';
 export { inventoryService as default };
 

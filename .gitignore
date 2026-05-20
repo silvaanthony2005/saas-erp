@@ -52,16 +52,21 @@ frontend/dist/
 *.swo
 *~
 
+# Agent
+.opencode/
+opencode.json
+
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# opencode config (contains API keys)
-opencode.json
 
 # Misc
 *.bak
 *.tmp
 *.temp
 *.cache
+
+# Graphify
+graphify-out/
+.graphifyignore

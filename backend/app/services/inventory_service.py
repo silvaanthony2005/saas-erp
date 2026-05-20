@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.business import Product, Category
 from app.schemas.business import ProductCreate, CategoryCreate, ProductUpdate
-from app.services.accounting_service import AccountingService
 from fastapi import HTTPException
 
 class InventoryService:
@@ -24,19 +23,6 @@ class InventoryService:
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
-        
-        # Registrar automáticamente el costo de adquisición en contabilidad
-        total_cost_bs = db_product.cost_price_bs * db_product.stock_quantity
-        if total_cost_bs > 0:
-            AccountingService.register_entry(
-                db,
-                entry_type="expense",
-                amount_bs=total_cost_bs,
-                description=f"Adquisición inicial de inventario: {db_product.name} ({db_product.stock_quantity} unidades)",
-                category="Inventory",
-                reference_id=db_product.id
-            )
-        
         return db_product
 
     @staticmethod
@@ -44,20 +30,6 @@ class InventoryService:
         product = db.query(Product).filter(Product.id == product_id).first()
         if product:
             product.stock_quantity += quantity_change
-            
-            # Si es un incremento de stock (compra/entrada), registrar como gasto
-            if quantity_change > 0:
-                total_cost_bs = product.cost_price_bs * quantity_change
-                if total_cost_bs > 0:
-                    AccountingService.register_entry(
-                        db,
-                        entry_type="expense",
-                        amount_bs=total_cost_bs,
-                        description=f"Ajuste de entrada de inventario: {product.name} (+{quantity_change} unidades)",
-                        category="Inventory",
-                        reference_id=product.id
-                    )
-            
             db.commit()
             db.refresh(product)
         return product

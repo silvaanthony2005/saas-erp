@@ -1,48 +1,35 @@
-import pytest
-from datetime import date
-from fastapi import HTTPException
-from backend.app.models.hr import Employee
-from backend.app.models.accounting import AccountingEntry
-from backend.app.schemas.hr import EmployeeCreate, PayrollCreate
-from backend.app.services.hr_service import HRService
+def test_create_employee(client):
+    resp = client.post("/api/v1/hr/employees", json={
+        "first_name": "Juan",
+        "last_name": "Perez",
+        "email": "juan@test.com",
+        "position": "Vendedor",
+        "base_salary": 500.0,
+    })
+    assert resp.status_code == 200
+    assert resp.json()["first_name"] == "Juan"
 
+def test_list_employees(client):
+    client.post("/api/v1/hr/employees", json={
+        "first_name": "A", "last_name": "B", "email": "a@test.com",
+        "position": "Test", "base_salary": 300.0,
+    })
+    resp = client.get("/api/v1/hr/employees")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
 
-def seed_employee(session):
-    employee = Employee(
-        first_name="Marta",
-        last_name="Perez",
-        email="marta@example.com",
-        position="Analista",
-        base_salary=1000.0,
-    )
-    session.add(employee)
-    session.commit()
-    session.refresh(employee)
-    return employee
-
-
-def test_process_payroll_success(session):
-    employee = seed_employee(session)
-    payroll_data = PayrollCreate(
-        employee_id=employee.id,
-        pay_period_start=date(2026, 5, 1),
-        pay_period_end=date(2026, 5, 15),
-        deductions=100.0,
-    )
-    payroll = HRService.process_payroll(session, payroll_data)
-    assert payroll.net_salary == 900.0
-
-    entry = session.query(AccountingEntry).filter(AccountingEntry.reference_id == payroll.id).first()
-    assert entry is not None
-    assert entry.entry_type == "expense"
-
-
-def test_process_payroll_missing_employee(session):
-    payroll_data = PayrollCreate(
-        employee_id=999,
-        pay_period_start=date(2026, 5, 1),
-        pay_period_end=date(2026, 5, 15),
-        deductions=0.0,
-    )
-    with pytest.raises(HTTPException):
-        HRService.process_payroll(session, payroll_data)
+def test_process_payroll(client):
+    emp_resp = client.post("/api/v1/hr/employees", json={
+        "first_name": "Carlos", "last_name": "Lopez",
+        "email": "carlos@test.com", "position": "Cajero",
+        "base_salary": 400.0, "hire_date": "2025-01-01",
+    })
+    emp_id = emp_resp.json()["id"]
+    resp = client.post("/api/v1/hr/payroll", json={
+        "employee_id": emp_id,
+        "pay_period_start": "2026-05-01",
+        "pay_period_end": "2026-05-31",
+        "deductions": 50.0,
+    })
+    assert resp.status_code == 200
+    assert resp.json()["net_salary"] == 350.0

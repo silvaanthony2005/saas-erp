@@ -9,7 +9,11 @@ import {
   CircleDollarSign,
   Settings,
   ChevronRight,
-  ScrollText
+  ScrollText,
+  Building2,
+  FileText,
+  CreditCard,
+  Truck
 } from "lucide-react";
 import { ModeToggle } from "./shared/ModeToggle";
 import Link from "next/link";
@@ -22,6 +26,9 @@ const menuItems = [
   { icon: ScrollText, label: "Historial", color: "text-emerald-400", href: "/sales" },
   { icon: Users, label: "Clientes", color: "text-indigo-500", href: "/customers" },
   { icon: Package, label: "Inventario", color: "text-amber-500", href: "/inventory" },
+  { icon: Building2, label: "Proveedores", color: "text-orange-500", href: "/suppliers" },
+  { icon: Truck, label: "Compras", color: "text-cyan-500", href: "/purchases" },
+  { icon: CreditCard, label: "CxP", color: "text-rose-500", href: "/accounts-payable" },
   { icon: CircleDollarSign, label: "Contabilidad", color: "text-violet-500", href: "/accounting" },
   { icon: Users, label: "Nómina / RRHH", color: "text-hr", href: "/hr" },
 ];

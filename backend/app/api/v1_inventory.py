@@ -17,7 +17,7 @@ class PaginatedProducts(BaseModel):
 @router.get("/products", response_model=PaginatedProducts)
 def read_products(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=1000),
     search: str = Query("", max_length=100),
     category_id: Optional[int] = Query(None, ge=1),
     db: Session = Depends(get_db)
@@ -34,6 +34,11 @@ def read_products(
 @router.post("/products", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     return InventoryService.create_product(db, product)
+
+@router.get("/products/{product_id}", response_model=ProductResponse)
+def read_product(product_id: int, db: Session = Depends(get_db)):
+    product = InventoryService.get_product_by_id(db, product_id)
+    return ProductResponse.from_orm_with_category(product)
 
 @router.put("/products/{product_id}", response_model=ProductResponse)
 def update_product(product_id: int, product: ProductUpdate, db: Session = Depends(get_db)):
