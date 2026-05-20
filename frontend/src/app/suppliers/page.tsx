@@ -40,6 +40,7 @@ export default function SuppliersPage() {
   const [formData, setFormData] = useState<SupplierInput>(initialFormData);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,16 +93,21 @@ export default function SuppliersPage() {
 
   const handleDeleteClick = (id: number) => {
     setSelectedId(id);
+    setDeleteError(null);
     setIsDeleteOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (selectedId) {
-      try { await remove(selectedId); refresh(); }
-      catch (err) { console.error(err); }
+    if (!selectedId) return;
+    try {
+      await remove(selectedId);
+      refresh();
+      setIsDeleteOpen(false);
+      setSelectedId(null);
+      setDeleteError(null);
+    } catch (err: any) {
+      setDeleteError(err.message || "Error al eliminar el proveedor");
     }
-    setIsDeleteOpen(false);
-    setSelectedId(null);
   };
 
   return (
@@ -314,15 +320,30 @@ export default function SuppliersPage() {
               className="fixed inset-0 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-6 h-6 text-rose-500" />
+                  <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0", deleteError ? "bg-rose-100 dark:bg-rose-900/30" : "bg-amber-100 dark:bg-amber-900/30")}>
+                    <AlertCircle className={cn("w-6 h-6", deleteError ? "text-rose-500" : "text-amber-500")} />
                   </div>
-                  <div><h3 className="text-lg font-bold">Eliminar Proveedor</h3><p className="text-sm text-slate-500">No se puede eliminar si tiene facturas asociadas</p></div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {deleteError ? "No se pudo eliminar" : "Eliminar Proveedor"}
+                    </h3>
+                    <p className="text-sm text-slate-500">Los proveedores con compras no pueden eliminarse</p>
+                  </div>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">¿Estás seguro de eliminar este proveedor?</p>
+                {deleteError ? (
+                  <div className="mb-6 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+                    <p className="text-sm text-rose-700 dark:text-rose-400">{deleteError}</p>
+                  </div>
+                ) : (
+                  <p className="text-slate-600 dark:text-slate-400 mb-6">¿Estás seguro de eliminar este proveedor?</p>
+                )}
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setIsDeleteOpen(false)} className="flex-1 rounded-xl">Cancelar</Button>
-                  <Button onClick={handleDeleteConfirm} className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700">Eliminar</Button>
+                  <Button variant="outline" onClick={() => { setIsDeleteOpen(false); setDeleteError(null); }} className="flex-1 rounded-xl">
+                    {deleteError ? "Cerrar" : "Cancelar"}
+                  </Button>
+                  {!deleteError && (
+                    <Button onClick={handleDeleteConfirm} className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700">Eliminar</Button>
+                  )}
                 </div>
               </div>
             </motion.div>
