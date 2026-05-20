@@ -116,15 +116,44 @@ class PurchaseService:
             raise HTTPException(status_code=400, detail="La factura ya está anulada")
 
         invoice.status = "cancelled"
+        costing_method = InventoryCostService.get_costing_method(db)
+
         for detail in invoice.details:
             product = db.query(Product).filter(Product.id == detail.product_id).first()
-            if product:
-                product.stock_quantity -= detail.quantity
-                if product.stock_quantity < 0:
-                    product.stock_quantity = 0
+            if not product:
+                continue
 
+            pid, qty, cost = detail.product_id, detail.quantity, detail.unit_cost_bs
+
+            # 1. Registrar movimiento Kardex de salida
+            InventoryCostService.record_outbound_movement(
+                db, pid, qty, cost, qty * cost,
+                "purchase_cancellation", purchase_id
+            )
+
+            # 2. Reversar stock y costeo según método
+            if costing_method == "fifo":
+                InventoryCostService.reverse_fifo_layers(db, pid, qty, purchase_id)
+                product.stock_quantity = max(0, product.stock_quantity - qty)
+            else:
+                InventoryCostService.reverse_weighted_average(db, pid, qty, cost)
+
+        # 3. Anular CxP y reversar pagos
         if invoice.accounts_payable:
-            invoice.accounts_payable.status = "cancelled"
+            ap = invoice.accounts_payable
+            ap.status = "cancelled"
+            for payment in ap.payment_schedules:
+                payment.is_paid = 0
+            ap.remaining_balance_bs = 0
+            if invoice.payment_type in ("credit", "paid"):
+                invoice.payment_type = "cancelled"
+
+        # 4. Reverso contable (contra-gasto)
+        AccountingService.register_entry(
+            db, "expense", -invoice.total_bs,
+            f"Anulación compra #{invoice.invoice_number}",
+            category="Inventory", reference_id=purchase_id
+        )
 
         db.commit()
         db.refresh(invoice)

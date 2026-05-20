@@ -154,6 +154,33 @@ class InventoryCostService:
         return {"unit_cost_bs": unit_cost, "total_cost_bs": total_cost}
 
     @staticmethod
+    def reverse_fifo_layers(db: Session, product_id: int, quantity: int, purchase_id: int):
+        layer = db.query(InventoryMovement).filter(
+            InventoryMovement.product_id == product_id,
+            InventoryMovement.movement_type == "in",
+            InventoryMovement.reference_type == "purchase",
+            InventoryMovement.reference_id == purchase_id
+        ).first()
+        if layer:
+            layer.remaining_quantity = max(0, (layer.remaining_quantity or 0) - quantity)
+        db.commit()
+
+    @staticmethod
+    def reverse_weighted_average(db: Session, product_id: int, qty: int, cost_bs: float):
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return
+        old_stock = product.stock_quantity
+        new_stock = old_stock - qty
+        if new_stock > 0:
+            product.cost_price_bs = round(
+                ((old_stock * product.cost_price_bs) - (qty * cost_bs)) / new_stock, 2
+            )
+        product.stock_quantity = new_stock
+        db.commit()
+        db.refresh(product)
+
+    @staticmethod
     def get_kardex(db: Session, product_id: int = None, skip: int = 0, limit: int = 100):
         query = db.query(InventoryMovement)
         if product_id:

@@ -211,6 +211,21 @@ def test_cancel_purchase(client):
     prod_resp = client.get(f"/api/v1/inventory/products/{prod_id}")
     assert prod_resp.json()["stock_quantity"] == 20  # 20 + 10 - 10
 
+    # Verificar movimiento Kardex de anulación
+    kardex_resp = client.get(f"/api/v1/costing/kardex?product_id={prod_id}")
+    assert kardex_resp.status_code == 200
+    movements = kardex_resp.json()["movements"]
+    cancel_moves = [m for m in movements if m["reference_type"] == "purchase_cancellation"]
+    assert len(cancel_moves) == 1
+    assert cancel_moves[0]["movement_type"] == "out"
+    assert cancel_moves[0]["quantity"] == 10
+
+    # Verificar reverso contable (contra-gasto)
+    summary_resp = client.get("/api/v1/accounting/summary")
+    assert summary_resp.status_code == 200
+    # La compra registró +1000 de gasto, la anulación registra -1000, neto = 0
+    assert summary_resp.json()["total_expenses_bs"] == 0.0
+
 def test_costing_config(client):
     resp = client.get("/api/v1/costing/method")
     assert resp.status_code == 200
