@@ -15,7 +15,7 @@ def create_expense(
     current_user = Depends(require_role("dueño")),
     _ = Depends(require_license("accounting")),
 ):
-    return AccountingService.create_expense(db, expense)
+    return AccountingService.create_expense(db, expense, current_user=current_user)
 
 @router.get("/expenses", response_model=List[ExpenseResponse])
 def read_expenses(
@@ -25,7 +25,13 @@ def read_expenses(
     current_user = Depends(require_role("dueño")),
     _ = Depends(require_license("accounting")),
 ):
-    return AccountingService.get_expenses(db, skip=skip, limit=limit)
+    expenses = AccountingService.get_expenses(db, skip=skip, limit=limit)
+    result = []
+    for e in expenses:
+        d = ExpenseResponse.model_validate(e).model_dump()
+        d["created_by_name"] = e.creator.full_name if e.creator else None
+        result.append(ExpenseResponse(**d))
+    return result
 
 @router.delete("/expenses/{expense_id}")
 def delete_expense(
@@ -51,7 +57,7 @@ def create_income(
     current_user = Depends(require_role("dueño")),
     _ = Depends(require_license("accounting")),
 ):
-    return AccountingService.create_income(db, income)
+    return AccountingService.create_income(db, income, current_user=current_user)
 
 @router.get("/income", response_model=List[IncomeResponse])
 def read_incomes(

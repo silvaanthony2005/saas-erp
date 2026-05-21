@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.middleware import LicenseMiddleware
-from app.core.database import engine, Base
+from app.core.database import engine, Base, SessionLocal
 
 # Importar modelos para que Base.metadata los conozca antes de crear tablas
 from app.models.business import Product, Category, Transaction, TransactionDetail, Customer, SalePayment, Receivable, ReceivablePayment
@@ -18,6 +18,8 @@ from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, 
 import asyncio
 from app.core.scheduler import update_exchange_rate_task
 from app.core.auth import seed_admin_user
+from app.core.database import SessionLocal
+from app.models.core import License
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -28,6 +30,28 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     seed_admin_user()
+    # Auto-activar licencia con todos los módulos en desarrollo
+    db = SessionLocal()
+    lic = db.query(License).first()
+    if lic:
+        lic.is_active = True
+        lic.has_pos_module = True
+        lic.has_inventory_module = True
+        lic.has_hr_module = True
+        lic.has_accounting_module = True
+    else:
+        import uuid
+        lic = License(
+            hwid=str(uuid.uuid4()),
+            is_active=True,
+            has_pos_module=True,
+            has_inventory_module=True,
+            has_hr_module=True,
+            has_accounting_module=True,
+        )
+        db.add(lic)
+    db.commit()
+    db.close()
     asyncio.create_task(update_exchange_rate_task())
 
 

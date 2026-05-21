@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Date, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.core import User
 import datetime
 
 class Employee(Base):
@@ -15,8 +16,10 @@ class Employee(Base):
     position = Column(String)
     base_salary = Column(Float)
     is_active = Column(Boolean, default=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     payrolls = relationship("Payroll", back_populates="employee")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class Payroll(Base):
     __tablename__ = "payrolls"
@@ -30,5 +33,7 @@ class Payroll(Base):
     net_salary = Column(Float)
     payment_date = Column(DateTime, default=datetime.datetime.utcnow)
     status = Column(String, default="paid") # paid, pending
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     employee = relationship("Employee", back_populates="payrolls")
+    creator = relationship("User", foreign_keys=[created_by])

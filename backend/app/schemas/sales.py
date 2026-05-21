@@ -52,6 +52,7 @@ class SaleResponse(BaseModel):
     customer_name: Optional[str] = None
     customer_dni: Optional[str] = None
     customer_category: Optional[str] = None
+    created_by_name: Optional[str] = None
     details: List[SaleDetailResponse]
     payments: List[PaymentResponse] = []
     class Config:

@@ -33,6 +33,7 @@ def read_purchases(
     for inv in result["purchases"]:
         inv_data = PurchaseInvoiceResponse.model_validate(inv).model_dump()
         inv_data["supplier_name"] = inv.supplier.company_name if inv.supplier else None
+        inv_data["created_by_name"] = inv.creator.full_name if inv.creator else None
         inv_data["details"] = []
         for d in inv.details:
             det = PurchaseInvoiceDetailResponse.model_validate(d).model_dump()
@@ -70,7 +71,7 @@ def create_purchase(
     current_user = Depends(require_role("dueño", "supervisor")),
     _ = Depends(require_license("inventory")),
 ):
-    inv = PurchaseService.create_purchase(db, data)
+    inv = PurchaseService.create_purchase(db, data, current_user=current_user)
     inv_data = PurchaseInvoiceResponse.model_validate(inv).model_dump()
     inv_data["supplier_name"] = inv.supplier.company_name if inv.supplier else None
     inv_data["details"] = []
@@ -87,4 +88,4 @@ def cancel_purchase(
     current_user = Depends(require_role("dueño", "supervisor")),
     _ = Depends(require_license("inventory")),
 ):
-    return PurchaseService.cancel_purchase(db, purchase_id)
+    return PurchaseService.cancel_purchase(db, purchase_id, current_user=current_user)

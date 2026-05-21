@@ -67,5 +67,6 @@ class CustomerCreate(CustomerBase):
 class CustomerResponse(CustomerBase):
     id: int
     created_at: str
+    created_by_name: Optional[str] = None
     class Config:
         from_attributes = True

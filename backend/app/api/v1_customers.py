@@ -15,7 +15,8 @@ def customer_to_response(c):
         last_name=c.last_name, phone=c.phone, address=c.address,
         category=c.category or "regular",
         credit_limit_usd=c.credit_limit_usd or 0.0,
-        created_at=c.created_at.isoformat()
+        created_at=c.created_at.isoformat(),
+        created_by_name=c.creator.full_name if c.creator else None
     )
 
 @router.post("", response_model=CustomerResponse)
@@ -27,7 +28,9 @@ def create_customer(
     db_customer = db.query(Customer).filter(Customer.dni == customer.dni).first()
     if db_customer:
         raise HTTPException(status_code=400, detail="Customer already exists")
-    new_customer = Customer(**customer.model_dump())
+    data = customer.model_dump()
+    data["created_by"] = current_user.id if current_user else None
+    new_customer = Customer(**data)
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)

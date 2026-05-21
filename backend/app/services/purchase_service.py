@@ -14,7 +14,8 @@ from datetime import date
 
 class PurchaseService:
     @staticmethod
-    def create_purchase(db: Session, data: PurchaseInvoiceCreate):
+    def create_purchase(db: Session, data: PurchaseInvoiceCreate, current_user=None):
+        user_id = current_user.id if current_user else None
         supplier = db.query(Supplier).filter(Supplier.id == data.supplier_id).first()
         if not supplier:
             raise HTTPException(status_code=404, detail="Proveedor no encontrado")
@@ -30,7 +31,8 @@ class PurchaseService:
             invoice_date=datetime.strptime(data.invoice_date, "%Y-%m-%d").date() if data.invoice_date else None,
             due_date=datetime.strptime(data.due_date, "%Y-%m-%d").date() if data.due_date else None,
             notes=data.notes,
-            status="active"
+            status="active",
+            created_by=user_id
         )
         db.add(invoice)
         db.flush()
@@ -61,7 +63,7 @@ class PurchaseService:
                 )
                 InventoryCostService.record_inbound_movement(
                     db, d.product_id, d.quantity, d.unit_cost_bs,
-                    "purchase", invoice.id
+                    "purchase", invoice.id, current_user=current_user
                 )
             else:
                 InventoryCostService.apply_fifo_inbound(
@@ -85,7 +87,8 @@ class PurchaseService:
             amount_bs=data.total_bs,
             description=f"Compra #{data.invoice_number} - {supplier.company_name}",
             category="Inventory",
-            reference_id=invoice.id
+            reference_id=invoice.id,
+            current_user=current_user
         )
 
         db.commit()
@@ -109,7 +112,7 @@ class PurchaseService:
         return invoice
 
     @staticmethod
-    def cancel_purchase(db: Session, purchase_id: int):
+    def cancel_purchase(db: Session, purchase_id: int, current_user=None):
         invoice = db.query(PurchaseInvoice).filter(PurchaseInvoice.id == purchase_id).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Factura de compra no encontrada")
@@ -126,20 +129,17 @@ class PurchaseService:
 
             pid, qty, cost = detail.product_id, detail.quantity, detail.unit_cost_bs
 
-            # 1. Registrar movimiento Kardex de salida
             InventoryCostService.record_outbound_movement(
                 db, pid, qty, cost, qty * cost,
-                "purchase_cancellation", purchase_id
+                "purchase_cancellation", purchase_id, current_user=current_user
             )
 
-            # 2. Reversar stock y costeo según método
             if costing_method == "fifo":
                 InventoryCostService.reverse_fifo_layers(db, pid, qty, purchase_id)
                 product.stock_quantity = max(0, product.stock_quantity - qty)
             else:
                 InventoryCostService.reverse_weighted_average(db, pid, qty, cost)
 
-        # 3. Anular CxP y reversar pagos
         if invoice.accounts_payable:
             ap = invoice.accounts_payable
             ap.status = "cancelled"
@@ -149,11 +149,11 @@ class PurchaseService:
             if invoice.payment_type in ("credit", "paid"):
                 invoice.payment_type = "cancelled"
 
-        # 4. Reverso contable (contra-gasto)
         AccountingService.register_entry(
             db, "expense", -invoice.total_bs,
             f"Anulación compra #{invoice.invoice_number}",
-            category="Inventory", reference_id=purchase_id
+            category="Inventory", reference_id=purchase_id,
+            current_user=current_user
         )
 
         db.commit()
@@ -177,7 +177,8 @@ class PurchaseService:
         return ap
 
     @staticmethod
-    def make_payment(db: Session, data: PaymentScheduleCreate):
+    def make_payment(db: Session, data: PaymentScheduleCreate, current_user=None):
+        user_id = current_user.id if current_user else None
         ap = db.query(AccountsPayable).filter(AccountsPayable.id == data.accounts_payable_id).first()
         if not ap:
             raise HTTPException(status_code=404, detail="Cuenta por pagar no encontrada")
@@ -194,7 +195,8 @@ class PurchaseService:
             payment_date=datetime.strptime(data.payment_date, "%Y-%m-%d") if data.payment_date else datetime.utcnow(),
             payment_method=data.payment_method,
             notes=data.notes,
-            is_paid=1
+            is_paid=1,
+            created_by=user_id
         )
         db.add(payment)
 

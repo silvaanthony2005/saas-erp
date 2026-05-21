@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Date, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.core import User
 import datetime
 
 class Supplier(Base):
@@ -15,8 +16,10 @@ class Supplier(Base):
     dni_rif = Column(String, unique=True, index=True)
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     purchase_invoices = relationship("PurchaseInvoice", back_populates="supplier")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class PurchaseInvoice(Base):
     __tablename__ = "purchase_invoices"
@@ -34,8 +37,10 @@ class PurchaseInvoice(Base):
     due_date = Column(Date, nullable=True)
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     supplier = relationship("Supplier", back_populates="purchase_invoices")
+    creator = relationship("User", foreign_keys=[created_by])
     details = relationship("PurchaseInvoiceDetail", back_populates="purchase_invoice", cascade="all, delete-orphan")
     accounts_payable = relationship("AccountsPayable", back_populates="purchase_invoice", uselist=False, cascade="all, delete-orphan")
 
@@ -77,8 +82,10 @@ class PaymentSchedule(Base):
     notes = Column(String, nullable=True)
     is_paid = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     accounts_payable = relationship("AccountsPayable", back_populates="payment_schedules")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class InventoryMovement(Base):
     __tablename__ = "inventory_movements"
@@ -93,8 +100,10 @@ class InventoryMovement(Base):
     reference_id = Column(Integer, nullable=True)
     remaining_quantity = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     product = relationship("Product")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class CostingConfig(Base):
     __tablename__ = "costing_config"

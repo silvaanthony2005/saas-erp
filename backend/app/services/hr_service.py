@@ -7,8 +7,11 @@ from fastapi import HTTPException
 
 class HRService:
     @staticmethod
-    def create_employee(db: Session, employee_data: EmployeeCreate):
-        db_employee = Employee(**employee_data.model_dump())
+    def create_employee(db: Session, employee_data: EmployeeCreate, current_user=None):
+        user_id = current_user.id if current_user else None
+        emp_data = employee_data.model_dump()
+        emp_data["created_by"] = user_id
+        db_employee = Employee(**emp_data)
         db.add(db_employee)
         db.commit()
         db.refresh(db_employee)
@@ -19,7 +22,8 @@ class HRService:
         return db.query(Employee).offset(skip).limit(limit).all()
 
     @staticmethod
-    def process_payroll(db: Session, payroll_data: PayrollCreate):
+    def process_payroll(db: Session, payroll_data: PayrollCreate, current_user=None):
+        user_id = current_user.id if current_user else None
         employee = db.query(Employee).filter(Employee.id == payroll_data.employee_id).first()
         if not employee:
             raise HTTPException(status_code=404, detail="Employee not found")
@@ -27,8 +31,10 @@ class HRService:
         gross_salary = employee.base_salary
         net_salary = gross_salary - payroll_data.deductions
         
+        payroll_dict = payroll_data.model_dump()
+        payroll_dict["created_by"] = user_id
         db_payroll = Payroll(
-            **payroll_data.model_dump(),
+            **payroll_dict,
             gross_salary=gross_salary,
             net_salary=net_salary
         )
@@ -37,23 +43,23 @@ class HRService:
         db.commit()
         db.refresh(db_payroll)
         
-        # Registrar como gasto en la tabla expenses para que aparezca en el listado de gastos
         db_expense = Expense(
             description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
             amount_bs=net_salary,
-            category="salary"
+            category="salary",
+            created_by=user_id
         )
         db.add(db_expense)
         db.flush()
 
-        # Registrar como salida contable
         AccountingService.register_entry(
             db,
             entry_type="expense",
             amount_bs=net_salary,
             description=f"Pago Nómina: {employee.first_name} {employee.last_name}",
             reference_id=db_payroll.id,
-            category="salary"
+            category="salary",
+            current_user=current_user
         )
         
         return db_payroll

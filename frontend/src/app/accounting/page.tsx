@@ -648,10 +648,15 @@ export default function AccountingPage() {
                         <td className="px-4 py-4">
                           <span className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{expense.description}</span>
                         </td>
-                        <td className="px-4 py-4 text-center">
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[9px] font-bold uppercase tracking-wider">
-                            {expense.category}
-                          </span>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[9px] font-bold uppercase tracking-wider">
+                              {expense.category}
+                            </span>
+                            {expense.created_by_name && (
+                              <span className="text-[9px] text-slate-400 font-medium">{expense.created_by_name}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-right">
                           <div className="flex flex-col items-end">

@@ -13,6 +13,7 @@ class ExpenseCreate(ExpenseBase):
 class ExpenseResponse(ExpenseBase):
     id: int
     timestamp: datetime
+    created_by_name: Optional[str] = None
     class Config:
         from_attributes = True
 

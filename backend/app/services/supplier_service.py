@@ -24,18 +24,21 @@ class SupplierService:
         return supplier
 
     @staticmethod
-    def create_supplier(db: Session, data: SupplierCreate):
+    def create_supplier(db: Session, data: SupplierCreate, current_user=None):
+        user_id = current_user.id if current_user else None
         existing = db.query(Supplier).filter(Supplier.dni_rif == data.dni_rif).first()
         if existing:
             raise HTTPException(status_code=400, detail="Ya existe un proveedor con ese RIF/DNI")
-        supplier = Supplier(**data.model_dump())
+        supplier_data = data.model_dump()
+        supplier_data["created_by"] = user_id
+        supplier = Supplier(**supplier_data)
         db.add(supplier)
         db.commit()
         db.refresh(supplier)
         return supplier
 
     @staticmethod
-    def update_supplier(db: Session, supplier_id: int, data: dict):
+    def update_supplier(db: Session, supplier_id: int, data: dict, current_user=None):
         supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
         if not supplier:
             raise HTTPException(status_code=404, detail="Proveedor no encontrado")

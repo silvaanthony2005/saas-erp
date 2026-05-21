@@ -76,7 +76,7 @@ def make_payment(
     current_user = Depends(require_role("dueño", "supervisor")),
     _ = Depends(require_license("accounting")),
 ):
-    payment = PurchaseService.make_payment(db, data)
+    payment = PurchaseService.make_payment(db, data, current_user=current_user)
     return PaymentScheduleResponse.model_validate(payment)
 
 @router.get("/{ap_id}/payments", response_model=List[PaymentScheduleResponse])

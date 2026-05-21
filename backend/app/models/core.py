@@ -12,8 +12,8 @@ class License(Base):
     is_active = Column(Boolean, default=False)
     has_pos_module = Column(Boolean, default=True)
     has_inventory_module = Column(Boolean, default=True)
-    has_hr_module = Column(Boolean, default=False)
-    has_accounting_module = Column(Boolean, default=False)
+    has_hr_module = Column(Boolean, default=True)
+    has_accounting_module = Column(Boolean, default=True)
 
 class User(Base):
     __tablename__ = "users"

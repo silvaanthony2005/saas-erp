@@ -28,7 +28,8 @@ class CxCService:
 
     @staticmethod
     def make_payment(db: Session, receivable_id: int, amount_bs: float,
-                     payment_method: str = "cash", reference_number: str = None):
+                     payment_method: str = "cash", reference_number: str = None, current_user=None):
+        user_id = current_user.id if current_user else None
         receivable = db.query(Receivable).filter(Receivable.id == receivable_id).first()
         if not receivable:
             raise HTTPException(status_code=404, detail="CxC no encontrada")
@@ -64,7 +65,8 @@ class CxCService:
             amount_bs=amount_bs,
             exchange_rate=current_rate,
             payment_method=payment_method,
-            reference_number=reference_number
+            reference_number=reference_number,
+            created_by=user_id
         )
         db.add(payment)
 

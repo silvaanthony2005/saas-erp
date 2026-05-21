@@ -6,13 +6,15 @@ from app.schemas.accounting import ExpenseCreate, IncomeCreate
 
 class AccountingService:
     @staticmethod
-    def register_entry(db: Session, entry_type: str, amount_bs: float, description: str, reference_id: int = None, category: str = None):
+    def register_entry(db: Session, entry_type: str, amount_bs: float, description: str, reference_id: int = None, category: str = None, current_user=None):
+        user_id = current_user.id if current_user else None
         entry = AccountingEntry(
             entry_type=entry_type,
             amount_bs=amount_bs,
             description=description,
             reference_id=reference_id,
-            category=category
+            category=category,
+            created_by=user_id
         )
         db.add(entry)
         
@@ -21,7 +23,8 @@ class AccountingService:
                 description=description,
                 amount_bs=amount_bs,
                 category=category or "Inventory",
-                timestamp=entry.timestamp
+                timestamp=entry.timestamp,
+                created_by=user_id
             )
             db.add(expense)
 
@@ -29,8 +32,11 @@ class AccountingService:
         return entry
 
     @staticmethod
-    def create_expense(db: Session, expense_data: ExpenseCreate):
-        db_expense = Expense(**expense_data.model_dump())
+    def create_expense(db: Session, expense_data: ExpenseCreate, current_user=None):
+        user_id = current_user.id if current_user else None
+        data = expense_data.model_dump()
+        data["created_by"] = user_id
+        db_expense = Expense(**data)
         db.add(db_expense)
         db.commit()
         db.refresh(db_expense)
@@ -41,18 +47,21 @@ class AccountingService:
             amount_bs=db_expense.amount_bs, 
             description=f"Gasto: {db_expense.description}",
             reference_id=db_expense.id,
-            category=db_expense.category
+            category=db_expense.category,
+            current_user=current_user
         )
         
         return db_expense
 
     @staticmethod
-    def create_income(db: Session, income_data: IncomeCreate):
+    def create_income(db: Session, income_data: IncomeCreate, current_user=None):
+        user_id = current_user.id if current_user else None
         db_income = AccountingEntry(
             entry_type="income",
             amount_bs=income_data.amount_bs,
             description=income_data.description,
-            category=income_data.category
+            category=income_data.category,
+            created_by=user_id
         )
         db.add(db_income)
         db.commit()

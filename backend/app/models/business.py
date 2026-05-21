@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Date
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.core import User
 import datetime
 
 class Product(Base):
@@ -33,8 +34,10 @@ class Customer(Base):
     category = Column(String, default="regular") # "regular" o "exclusive"
     credit_limit_usd = Column(Float, default=0.0) # Límite de crédito en USD (solo exclusivos)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     transactions = relationship("Transaction", back_populates="customer")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class Category(Base):
     __tablename__ = "categories"
@@ -55,8 +58,10 @@ class Transaction(Base):
     payment_method = Column(String, default="Cash") # "Cash", "Transfer", "Card"
     status = Column(Integer, default=1) # 1: Active, 0: Canceled
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     customer = relationship("Customer", back_populates="transactions")
+    creator = relationship("User", foreign_keys=[created_by])
     details = relationship("TransactionDetail", back_populates="transaction")
     payments = relationship("SalePayment", back_populates="sale", cascade="all, delete-orphan")
     receivable = relationship("Receivable", back_populates="sale", uselist=False, cascade="all, delete-orphan")
@@ -117,8 +122,10 @@ class ReceivablePayment(Base):
     payment_method = Column(String)
     reference_number = Column(String, nullable=True)
     payment_date = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     receivable = relationship("Receivable", back_populates="payments")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class ReceivableSchedule(Base):
     __tablename__ = "receivable_schedules"

@@ -107,6 +107,7 @@ export interface Sale {
   customer_name?: string;
   customer_dni?: string;
   customer_category?: string;
+  created_by_name?: string;
   details: SaleDetail[];
   payments: SalePayment[];
 }
@@ -121,6 +122,7 @@ export interface Customer {
   category: string;
   credit_limit_usd: number;
   created_at: string;
+  created_by_name?: string;
 }
 
 export interface CustomerStats {
@@ -425,6 +427,7 @@ export interface Expense {
   amount_bs: number;
   category: string;
   timestamp: string;
+  created_by_name?: string;
 }
 
 export interface Income {

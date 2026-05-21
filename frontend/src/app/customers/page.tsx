@@ -225,6 +225,7 @@ export default function CustomersPage() {
                   <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Identificación</th>
                   <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Contacto</th>
                   <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Registrado</th>
+                  <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Creado por</th>
                   <th className="px-8 py-4 text-right"></th>
                 </tr>
               </thead>
@@ -267,6 +268,11 @@ export default function CustomersPage() {
                         <Calendar className="w-4 h-4" />
                         {new Date(c.created_at).toLocaleDateString()}
                       </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className="text-xs text-slate-400 font-medium">
+                        {c.created_by_name || "—"}
+                      </span>
                     </td>
                     <td className="px-8 py-6 text-right">
                       <button 
@@ -463,6 +469,11 @@ export default function CustomersPage() {
                       <span className="text-slate-400 text-[10px] font-bold uppercase">
                         Desde {new Date(selectedCustomer.created_at).toLocaleDateString()}
                       </span>
+                      {selectedCustomer.created_by_name && (
+                        <span className="text-slate-400 text-[10px] ml-2">
+                          · Creado por: <strong>{selectedCustomer.created_by_name}</strong>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

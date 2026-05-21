@@ -32,7 +32,8 @@ class InventoryCostService:
     @staticmethod
     def record_inbound_movement(db: Session, product_id: int, quantity: int,
                                  unit_cost_bs: float, reference_type: str,
-                                 reference_id: int = None):
+                                 reference_id: int = None, current_user=None):
+        user_id = current_user.id if current_user else None
         total_cost_bs = quantity * unit_cost_bs
         movement = InventoryMovement(
             product_id=product_id,
@@ -42,7 +43,8 @@ class InventoryCostService:
             total_cost_bs=total_cost_bs,
             reference_type=reference_type,
             reference_id=reference_id,
-            remaining_quantity=quantity
+            remaining_quantity=quantity,
+            created_by=user_id
         )
         db.add(movement)
         return movement
@@ -50,7 +52,8 @@ class InventoryCostService:
     @staticmethod
     def record_outbound_movement(db: Session, product_id: int, quantity: int,
                                   unit_cost_bs: float, total_cost_bs: float,
-                                  reference_type: str, reference_id: int = None):
+                                  reference_type: str, reference_id: int = None, current_user=None):
+        user_id = current_user.id if current_user else None
         movement = InventoryMovement(
             product_id=product_id,
             movement_type="out",
@@ -59,7 +62,8 @@ class InventoryCostService:
             total_cost_bs=total_cost_bs,
             reference_type=reference_type,
             reference_id=reference_id,
-            remaining_quantity=None
+            remaining_quantity=None,
+            created_by=user_id
         )
         db.add(movement)
         return movement
@@ -89,7 +93,7 @@ class InventoryCostService:
     @staticmethod
     def apply_fifo_inbound(db: Session, product_id: int, inbound_qty: int,
                             inbound_cost_bs: int, reference_type: str,
-                            reference_id: int = None):
+                            reference_id: int = None, current_user=None):
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -100,7 +104,7 @@ class InventoryCostService:
 
         return InventoryCostService.record_inbound_movement(
             db, product_id, inbound_qty, inbound_cost_bs,
-            reference_type, reference_id
+            reference_type, reference_id, current_user=current_user
         )
 
     @staticmethod
@@ -133,7 +137,7 @@ class InventoryCostService:
 
     @staticmethod
     def consume_fifo_stock(db: Session, product_id: int, quantity: int,
-                            reference_type: str, reference_id: int = None) -> dict:
+                            reference_type: str, reference_id: int = None, current_user=None) -> dict:
         total_cost = InventoryCostService.calculate_fifo_cogs(db, product_id, quantity)
         if total_cost == 0 and quantity > 0:
             product = db.query(Product).filter(Product.id == product_id).first()
@@ -143,7 +147,7 @@ class InventoryCostService:
 
         InventoryCostService.record_outbound_movement(
             db, product_id, quantity, unit_cost, total_cost,
-            reference_type, reference_id
+            reference_type, reference_id, current_user=current_user
         )
 
         product = db.query(Product).filter(Product.id == product_id).first()

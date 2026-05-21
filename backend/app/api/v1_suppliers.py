@@ -45,7 +45,7 @@ def create_supplier(
     db: Session = Depends(get_db),
     current_user = Depends(require_role("dueño", "supervisor")),
 ):
-    return SupplierService.create_supplier(db, data)
+    return SupplierService.create_supplier(db, data, current_user=current_user)
 
 @router.put("/{supplier_id}", response_model=SupplierResponse)
 def update_supplier(
@@ -54,7 +54,7 @@ def update_supplier(
     db: Session = Depends(get_db),
     current_user = Depends(require_role("dueño", "supervisor")),
 ):
-    return SupplierService.update_supplier(db, supplier_id, data.model_dump())
+    return SupplierService.update_supplier(db, supplier_id, data.model_dump(), current_user=current_user)
 
 @router.delete("/{supplier_id}")
 def delete_supplier(

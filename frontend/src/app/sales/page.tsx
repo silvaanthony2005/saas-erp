@@ -187,11 +187,18 @@ export default function SalesPage() {
                                 </span>
                               </div>
                               
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] font-black uppercase text-slate-400">Tasa de cambio aplicada:</span>
-                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                  1 USD = {formatBS(sale.exchange_rate || 0)}
-                                </span>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase text-slate-400">Tasa de cambio aplicada:</span>
+                                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                    1 USD = {formatBS(sale.exchange_rate || 0)}
+                                  </span>
+                                </div>
+                                {sale.created_by_name && (
+                                  <span className="text-[10px] text-slate-400">
+                                    Creado por: <strong className="text-slate-600 dark:text-slate-300">{sale.created_by_name}</strong>
+                                  </span>
+                                )}
                               </div>
 
                               <div className="space-y-3">

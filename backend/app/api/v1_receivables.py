@@ -84,7 +84,8 @@ def pay_receivable(
     result = CxCService.make_payment(
         db, receivable_id, payment.amount_bs,
         payment_method=payment.payment_method,
-        reference_number=payment.reference_number
+        reference_number=payment.reference_number,
+        current_user=current_user
     )
     return result
 

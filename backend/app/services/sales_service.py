@@ -10,10 +10,11 @@ from app.services.accounting_service import AccountingService
 
 class SalesService:
     @staticmethod
-    def create_sale(db: Session, sale_data: SaleCreate):
+    def create_sale(db: Session, sale_data: SaleCreate, current_user=None):
         try:
             current_rate_obj = ExchangeRateService.get_current_rate(db)
             exchange_rate = current_rate_obj.rate if current_rate_obj else 1.0
+            user_id = current_user.id if current_user else None
 
             if sale_data.customer_id:
                 customer = db.query(Customer).filter(Customer.id == sale_data.customer_id).first()
@@ -40,7 +41,7 @@ class SalesService:
 
                 if costing_method == "fifo":
                     cogs = InventoryCostService.consume_fifo_stock(
-                        db, item.product_id, item.quantity, "sale"
+                        db, item.product_id, item.quantity, "sale", current_user=current_user
                     )
                     cogs_unit = cogs["unit_cost_bs"]
                     cogs_total = cogs["total_cost_bs"]
@@ -50,7 +51,7 @@ class SalesService:
                     product.stock_quantity -= item.quantity
                     InventoryCostService.record_outbound_movement(
                         db, item.product_id, item.quantity,
-                        cogs_unit, cogs_total, "sale"
+                        cogs_unit, cogs_total, "sale", current_user=current_user
                     )
 
                 total_cogs_bs += cogs_total
@@ -78,7 +79,8 @@ class SalesService:
                 exchange_rate=exchange_rate,
                 payment_method=payment_method_str,
                 customer_id=sale_data.customer_id,
-                details=details_to_create
+                details=details_to_create,
+                created_by=user_id
             )
             db.add(db_sale)
             db.flush()
@@ -142,7 +144,8 @@ class SalesService:
                 amount_bs=total_amount_bs,
                 description=f"Venta #{db_sale.id} ({pmt_desc})",
                 category="Ventas",
-                reference_id=db_sale.id
+                reference_id=db_sale.id,
+                created_by=user_id
             )
             db.add(income_entry)
 
@@ -152,7 +155,8 @@ class SalesService:
                 amount_bs=total_cogs_bs,
                 description=f"COGS Venta #{db_sale.id}",
                 category="COGS",
-                reference_id=db_sale.id
+                reference_id=db_sale.id,
+                current_user=current_user
             )
 
             db.commit()

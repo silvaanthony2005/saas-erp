@@ -20,6 +20,7 @@ def build_sale_response(sale):
         "customer_name": f"{sale.customer.first_name} {sale.customer.last_name}" if sale.customer else None,
         "customer_dni": sale.customer.dni if sale.customer else None,
         "customer_category": sale.customer.category if sale.customer else None,
+        "created_by_name": sale.creator.full_name if sale.creator else None,
         "details": [],
         "payments": []
     }
@@ -51,7 +52,7 @@ def create_sale(
     current_user = Depends(require_role("dueño", "supervisor", "cajero")),
     _ = Depends(require_license("pos")),
 ):
-    db_sale = SalesService.create_sale(db, sale)
+    db_sale = SalesService.create_sale(db, sale, current_user=current_user)
     return build_sale_response(db_sale)
 
 @router.get("", response_model=List[SaleResponse])

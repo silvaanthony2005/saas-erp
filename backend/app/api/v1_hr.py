@@ -15,7 +15,7 @@ def create_employee(
     current_user = Depends(require_role("dueño")),
     _ = Depends(require_license("hr")),
 ):
-    return HRService.create_employee(db, employee)
+    return HRService.create_employee(db, employee, current_user=current_user)
 
 @router.get("/employees", response_model=List[EmployeeResponse])
 def read_employees(
@@ -34,4 +34,4 @@ def process_payroll(
     current_user = Depends(require_role("dueño")),
     _ = Depends(require_license("hr")),
 ):
-    return HRService.process_payroll(db, payroll)
+    return HRService.process_payroll(db, payroll, current_user=current_user)

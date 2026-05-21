@@ -65,8 +65,8 @@ class PurchaseInvoiceResponse(BaseModel):
     due_date: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+    created_by_name: Optional[str] = None
     details: List[PurchaseInvoiceDetailResponse] = []
-
     class Config:
         from_attributes = True
 
