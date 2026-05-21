@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="flex h-screen overflow-hidden transition-colors duration-200">
+      <body className="h-screen overflow-hidden transition-colors duration-200">
         <ThemeProvider>
           <AuthProvider>
             <AppShell>

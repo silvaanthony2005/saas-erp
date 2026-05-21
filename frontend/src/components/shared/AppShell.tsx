@@ -26,16 +26,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <>{children}</>;
+    return <main className="w-full h-screen overflow-auto">{children}</main>;
   }
 
   return (
-    <>
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
       <ExchangeRateModal />
       <Sidebar />
       <div className="flex-1 flex flex-col relative overflow-hidden">
         {children}
       </div>
-    </>
+    </div>
   );
 }
