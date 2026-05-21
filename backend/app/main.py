@@ -5,7 +5,7 @@ from app.core.middleware import LicenseMiddleware
 from app.core.database import engine, Base
 
 # Importar modelos para que Base.metadata los conozca antes de crear tablas
-from app.models.business import Product, Category, Transaction, TransactionDetail, Customer
+from app.models.business import Product, Category, Transaction, TransactionDetail, Customer, SalePayment, Receivable, ReceivablePayment
 from app.models.accounting import Expense, AccountingEntry
 from app.models.hr import Employee, Payroll
 from app.models.exchange_rate import ExchangeRate
@@ -14,7 +14,7 @@ from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDeta
 # Crear tablas
 Base.metadata.create_all(bind=engine)
 
-from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables
 import asyncio
 from app.core.scheduler import update_exchange_rate_task
 
@@ -55,6 +55,7 @@ app.include_router(v1_suppliers.router, prefix=f"{settings.API_V1_STR}/suppliers
 app.include_router(v1_purchases.router, prefix=f"{settings.API_V1_STR}/purchases", tags=["purchases"])
 app.include_router(v1_accounts_payable.router, prefix=f"{settings.API_V1_STR}/accounts-payable", tags=["accounts-payable"])
 app.include_router(v1_costing.router, prefix=f"{settings.API_V1_STR}/costing", tags=["costing"])
+app.include_router(v1_receivables.router, prefix=f"{settings.API_V1_STR}/receivables", tags=["receivables"])
 
 @app.get("/")
 def root():
