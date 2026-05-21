@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi import HTTPException
 from datetime import datetime
 from app.models.purchasing import (
@@ -222,7 +223,7 @@ class PurchaseService:
             db.query(AccountsPayable).filter(
                 AccountsPayable.status.in_(["pending", "partially_paid"])
             ).with_entities(
-                db.func.sum(AccountsPayable.remaining_balance_bs)
+                func.sum(AccountsPayable.remaining_balance_bs)
             ).scalar() or 0.0
         ).scalar() or 0.0
         total_overdue = db.query(
@@ -230,14 +231,14 @@ class PurchaseService:
                 AccountsPayable.status.in_(["pending", "partially_paid"]),
                 AccountsPayable.due_date < date.today()
             ).with_entities(
-                db.func.sum(AccountsPayable.remaining_balance_bs)
+                func.sum(AccountsPayable.remaining_balance_bs)
             ).scalar() or 0.0
         ).scalar() or 0.0
         total_paid = db.query(
             db.query(AccountsPayable).filter(
                 AccountsPayable.status == "paid"
             ).with_entities(
-                db.func.sum(AccountsPayable.total_amount_bs)
+                func.sum(AccountsPayable.total_amount_bs)
             ).scalar() or 0.0
         ).scalar() or 0.0
 

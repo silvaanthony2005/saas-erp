@@ -6,8 +6,8 @@ class ProductBase(BaseModel):
     name: str
     description: Optional[str] = None
     image_url: Optional[str] = None
-    cost_price_bs: float
-    sale_price_bs: float
+    cost_price_usd: float = 0.0
+    sale_price_usd: float = 0.0
     stock_quantity: int
     min_stock: int = 5
     category_id: int
@@ -19,15 +19,17 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
-    cost_price_bs: Optional[float] = None
-    sale_price_bs: Optional[float] = None
+    cost_price_usd: Optional[float] = None
+    sale_price_usd: Optional[float] = None
     stock_quantity: Optional[int] = None
     min_stock: Optional[int] = None
 
 class ProductResponse(ProductBase):
     id: int
     category_name: Optional[str] = None
-    
+    cost_price_bs: float = 0.0
+    sale_price_bs: float = 0.0
+
     class Config:
         from_attributes = True
 
@@ -35,6 +37,8 @@ class ProductResponse(ProductBase):
     def from_orm_with_category(cls, product):
         data = cls.model_validate(product).model_dump()
         data["category_name"] = product.category.name if product.category else None
+        data["cost_price_bs"] = product.cost_price_bs or 0.0
+        data["sale_price_bs"] = product.sale_price_bs or 0.0
         return cls(**data)
 
 class CategoryBase(BaseModel):
@@ -54,6 +58,8 @@ class CustomerBase(BaseModel):
     last_name: str
     phone: Optional[str] = None
     address: Optional[str] = None
+    category: str = "regular"
+    credit_limit_usd: float = 0.0
 
 class CustomerCreate(CustomerBase):
     pass

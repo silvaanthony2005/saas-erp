@@ -1,9 +1,15 @@
 from sqlalchemy.orm import Session
 from app.models.business import Product, Category
+from app.models.exchange_rate import ExchangeRate
 from app.schemas.business import ProductCreate, CategoryCreate, ProductUpdate
 from fastapi import HTTPException
 
 class InventoryService:
+    @staticmethod
+    def _get_current_rate(db: Session) -> float:
+        rate = db.query(ExchangeRate).order_by(ExchangeRate.id.desc()).first()
+        return rate.rate if rate else 1.0
+
     @staticmethod
     def get_products(db: Session, skip: int = 0, limit: int = 100, search: str = "", category_id: int = None):
         query = db.query(Product)
@@ -19,7 +25,11 @@ class InventoryService:
 
     @staticmethod
     def create_product(db: Session, product: ProductCreate):
-        db_product = Product(**product.model_dump())
+        rate = InventoryService._get_current_rate(db)
+        data = product.model_dump()
+        data["cost_price_bs"] = round(data["cost_price_usd"] * rate, 2)
+        data["sale_price_bs"] = round(data["sale_price_usd"] * rate, 2)
+        db_product = Product(**data)
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
@@ -54,6 +64,12 @@ class InventoryService:
         update_data = product.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_product, key, value)
+        if "cost_price_usd" in update_data or "sale_price_usd" in update_data:
+            rate = InventoryService._get_current_rate(db)
+            if "cost_price_usd" in update_data:
+                db_product.cost_price_bs = round(db_product.cost_price_usd * rate, 2)
+            if "sale_price_usd" in update_data:
+                db_product.sale_price_bs = round(db_product.sale_price_usd * rate, 2)
         db.commit()
         db.refresh(db_product)
         return db_product

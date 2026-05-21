@@ -75,7 +75,9 @@ def seed():
     productos = []
     for sku, name, cost_usd, price_usd, stock, min_stock, cat_id in productos_usd:
         p = Product(
-            sku=sku, name=name, cost_price_bs=round(cost_usd * bs_to_usd, 2),
+            sku=sku, name=name, cost_price_usd=round(cost_usd, 2),
+            sale_price_usd=round(price_usd, 2),
+            cost_price_bs=round(cost_usd * bs_to_usd, 2),
             sale_price_bs=round(price_usd * bs_to_usd, 2),
             stock_quantity=stock, min_stock=min_stock, category_id=cat_id
         )
