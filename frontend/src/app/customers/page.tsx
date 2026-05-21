@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { customerService, Customer, CustomerStats } from "@/services/businessServices"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
-import { Search, Users, Trophy, ShoppingBag, Phone, MapPin, Calendar, ArrowRight, UserPlus, X, Loader2 } from "lucide-react"
+import { Search, Users, Trophy, ShoppingBag, Phone, MapPin, Calendar, ArrowRight, UserPlus, X, Loader2, Star } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { formatUSD } from "@/lib/currency"
 import { useExchangeRate } from "@/hooks/useExchangeRate"
@@ -28,7 +28,9 @@ export default function CustomersPage() {
     first_name: "",
     last_name: "",
     phone: "",
-    address: ""
+    address: "",
+    category: "regular",
+    credit_limit_usd: 0
   })
 
   const fetchData = async () => {
@@ -57,7 +59,7 @@ export default function CustomersPage() {
   }, [])
 
   const handleOpenAdd = () => {
-    setFormData({ dni: "", first_name: "", last_name: "", phone: "", address: "" })
+    setFormData({ dni: "", first_name: "", last_name: "", phone: "", address: "", category: "regular", credit_limit_usd: 0 })
     setShowAddModal(true)
   }
 
@@ -68,7 +70,9 @@ export default function CustomersPage() {
       first_name: customer.first_name,
       last_name: customer.last_name,
       phone: customer.phone || "",
-      address: customer.address || ""
+      address: customer.address || "",
+      category: customer.category || "regular",
+      credit_limit_usd: customer.credit_limit_usd || 0
     })
     setShowDetailModal(true)
     
@@ -370,6 +374,40 @@ export default function CustomersPage() {
                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   />
                 </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Star className="w-5 h-5 text-amber-500" />
+                      <span className="font-bold text-slate-900 dark:text-white">Cliente Exclusivo</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, category: formData.category === "exclusive" ? "regular" : "exclusive", credit_limit_usd: formData.category === "exclusive" ? 0 : formData.credit_limit_usd})}
+                      className={cn(
+                        "relative w-14 h-7 rounded-full transition-colors",
+                        formData.category === "exclusive" ? "bg-amber-500" : "bg-slate-200 dark:bg-slate-700"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                        formData.category === "exclusive" ? "translate-x-8" : "translate-x-1"
+                      )} />
+                    </button>
+                  </div>
+                  {formData.category === "exclusive" && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Límite de Crédito ($)</label>
+                      <input 
+                        type="number" min="0" step="10"
+                        value={formData.credit_limit_usd}
+                        onChange={(e) => setFormData({...formData, credit_limit_usd: parseFloat(e.target.value) || 0})}
+                        placeholder="Ej: 500"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                      />
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex gap-3 pt-6">
                   <Button 
@@ -417,6 +455,11 @@ export default function CustomersPage() {
                       <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                         DNI: {selectedCustomer.dni}
                       </span>
+                      {selectedCustomer.category === "exclusive" && (
+                        <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          ✦ Exclusivo
+                        </span>
+                      )}
                       <span className="text-slate-400 text-[10px] font-bold uppercase">
                         Desde {new Date(selectedCustomer.created_at).toLocaleDateString()}
                       </span>
@@ -449,6 +492,24 @@ export default function CustomersPage() {
                     </div>
                   </div>
                   
+                  {selectedCustomer.category === "exclusive" && (
+                    <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10 p-4 rounded-2xl border border-amber-200 dark:border-amber-800">
+                      <h4 className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] mb-3">
+                        ✦ Crédito
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-amber-700 dark:text-amber-300 font-medium">Límite</span>
+                          <span className="font-black text-amber-900 dark:text-amber-100">{formatUSD(selectedCustomer.credit_limit_usd || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-amber-700 dark:text-amber-300 font-medium">Disponible</span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400">{formatUSD((selectedCustomer.credit_limit_usd || 0))}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="pt-4">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Historial Reciente</h4>
                     <div className="space-y-3">
@@ -531,6 +592,40 @@ export default function CustomersPage() {
                       onChange={(e) => setFormData({...formData, address: e.target.value})}
                       className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
                     />
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <Star className="w-5 h-5 text-amber-500" />
+                        <span className="font-bold text-slate-900 dark:text-white">Cliente Exclusivo</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, category: formData.category === "exclusive" ? "regular" : "exclusive", credit_limit_usd: formData.category === "exclusive" ? 0 : formData.credit_limit_usd})}
+                        className={cn(
+                          "relative w-14 h-7 rounded-full transition-colors",
+                          formData.category === "exclusive" ? "bg-amber-500" : "bg-slate-200 dark:bg-slate-700"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                          formData.category === "exclusive" ? "translate-x-8" : "translate-x-1"
+                        )} />
+                      </button>
+                    </div>
+                    {formData.category === "exclusive" && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Límite de Crédito ($)</label>
+                        <input 
+                          type="number" min="0" step="10"
+                          value={formData.credit_limit_usd}
+                          onChange={(e) => setFormData({...formData, credit_limit_usd: parseFloat(e.target.value) || 0})}
+                          placeholder="Ej: 500"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-3 pt-4">
