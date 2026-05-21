@@ -16,8 +16,8 @@ def test_add_product(client):
     product_data = {
         "sku": "T001",
         "name": "Test Product",
-        "cost_price_bs": 10.0,
-        "sale_price_bs": 15.0,
+        "cost_price_usd": 2.0,
+        "sale_price_usd": 3.0,
         "stock_quantity": 100,
         "category_id": cat_id
     }

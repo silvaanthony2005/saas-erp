@@ -60,7 +60,7 @@ def test_create_purchase_cash(client):
     cat_id = cat_resp.json()["id"]
     prod_resp = client.post("/api/v1/inventory/products", json={
         "sku": "PUR001", "name": "Producto Compra",
-        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "cost_price_usd": 2.0, "sale_price_usd": 4.0,
         "stock_quantity": 10, "category_id": cat_id
     })
     prod_id = prod_resp.json()["id"]
@@ -94,7 +94,7 @@ def test_create_purchase_credit(client):
     cat_id = cat_resp.json()["id"]
     prod_resp = client.post("/api/v1/inventory/products", json={
         "sku": "PUR002", "name": "Producto Credito",
-        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "cost_price_usd": 2.0, "sale_price_usd": 4.0,
         "stock_quantity": 5, "category_id": cat_id
     })
     prod_id = prod_resp.json()["id"]
@@ -130,7 +130,7 @@ def test_make_payment(client):
     cat_id = cat_resp.json()["id"]
     prod_resp = client.post("/api/v1/inventory/products", json={
         "sku": "PUR003", "name": "Producto Pago",
-        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "cost_price_usd": 2.0, "sale_price_usd": 4.0,
         "stock_quantity": 0, "category_id": cat_id
     })
     prod_id = prod_resp.json()["id"]
@@ -186,7 +186,7 @@ def test_cancel_purchase(client):
     cat_id = cat_resp.json()["id"]
     prod_resp = client.post("/api/v1/inventory/products", json={
         "sku": "PUR004", "name": "Producto Cancel",
-        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "cost_price_usd": 2.0, "sale_price_usd": 4.0,
         "stock_quantity": 20, "category_id": cat_id
     })
     prod_id = prod_resp.json()["id"]
@@ -247,7 +247,7 @@ def test_kardex_movements(client):
     cat_id = cat_resp.json()["id"]
     prod_resp = client.post("/api/v1/inventory/products", json={
         "sku": "KARDEX01", "name": "Kardex Product",
-        "cost_price_bs": 10.0, "sale_price_bs": 20.0,
+        "cost_price_usd": 2.0, "sale_price_usd": 4.0,
         "stock_quantity": 0, "category_id": cat_id
     })
     prod_id = prod_resp.json()["id"]

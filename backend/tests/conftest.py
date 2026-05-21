@@ -10,13 +10,13 @@ from app.core.database import Base, get_db
 from app.core.config import settings
 from app.core.middleware import LicenseMiddleware
 
-from app.models.business import Product, Category, Transaction, TransactionDetail, Customer
+from app.models.business import Product, Category, Transaction, TransactionDetail, Customer, SalePayment, Receivable, ReceivablePayment, ReceivableSchedule
 from app.models.accounting import Expense, AccountingEntry
 from app.models.hr import Employee, Payroll
 from app.models.exchange_rate import ExchangeRate
 from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDetail, AccountsPayable, PaymentSchedule, InventoryMovement, CostingConfig
 
-from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 
@@ -63,6 +63,7 @@ def client_fixture(session):
     app.include_router(v1_purchases.router, prefix=f"{settings.API_V1_STR}/purchases", tags=["purchases"])
     app.include_router(v1_accounts_payable.router, prefix=f"{settings.API_V1_STR}/accounts-payable", tags=["accounts-payable"])
     app.include_router(v1_costing.router, prefix=f"{settings.API_V1_STR}/costing", tags=["costing"])
+    app.include_router(v1_receivables.router, prefix=f"{settings.API_V1_STR}/receivables", tags=["receivables"])
 
     @app.get("/")
     def root():
