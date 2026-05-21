@@ -13,7 +13,8 @@ import {
   Building2,
   FileText,
   CreditCard,
-  Truck
+  Truck,
+  DollarSign
 } from "lucide-react";
 import { ModeToggle } from "./shared/ModeToggle";
 import Link from "next/link";
@@ -29,6 +30,7 @@ const menuItems = [
   { icon: Building2, label: "Proveedores", color: "text-orange-500", href: "/suppliers" },
   { icon: Truck, label: "Compras", color: "text-cyan-500", href: "/purchases" },
   { icon: CreditCard, label: "CxP", color: "text-rose-500", href: "/accounts-payable" },
+  { icon: DollarSign, label: "CxC", color: "text-blue-500", href: "/receivables" },
   { icon: CircleDollarSign, label: "Contabilidad", color: "text-violet-500", href: "/accounting" },
   { icon: Users, label: "Nómina / RRHH", color: "text-hr", href: "/hr" },
 ];
