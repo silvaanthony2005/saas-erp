@@ -4,7 +4,6 @@ import time
 import signal
 import threading
 import subprocess
-import webbrowser
 from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -29,7 +28,7 @@ def wait_for_server(url: str, timeout: int = 60, label: str = "server"):
     start = time.time()
     while time.time() - start < timeout:
         try:
-            req = Request(url, method="HEAD")
+            req = Request(url, method="GET")
             urlopen(req, timeout=3)
             log(f"{label} listo ({int(time.time() - start)}s)")
             return True

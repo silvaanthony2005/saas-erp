@@ -52,7 +52,7 @@ export function Sidebar() {
         <ModeToggle />
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto min-h-0 scrollbar-none">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -62,7 +62,7 @@ export function Sidebar() {
               className={cn(
                 "w-full flex items-center justify-between p-3 rounded-xl transition-all group relative overflow-hidden",
                 isActive 
-                  ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xl translate-x-1" 
+                  ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xl pl-1" 
                   : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
               )}
             >

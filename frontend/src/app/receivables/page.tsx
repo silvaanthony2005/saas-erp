@@ -5,9 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { motion, AnimatePresence } from "framer-motion"
-import { formatUSD } from "@/lib/currency"
+import { formatUSD, formatBS, convertToUSD, convertToBS } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { receivableService, Receivable, ReceivableScheduleItem, ScheduleInstallmentInput } from "@/services/businessServices"
+import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { DollarSign, AlertCircle, CheckCircle2, Clock, Search, ChevronLeft, ChevronRight, Loader2, Banknote, History, Calendar, Plus, Trash2, Save } from "lucide-react"
 
 export default function ReceivablesPage() {
@@ -17,6 +18,7 @@ export default function ReceivablesPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("")
   const [summary, setSummary] = useState({ total_pending_usd: 0, total_overdue_usd: 0, total_paid_usd: 0 })
+  const { rate: currentRate, loading: rateLoading } = useExchangeRate()
   const pageSize = 20
 
   // Payment modal
@@ -230,7 +232,13 @@ export default function ReceivablesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4"><span className="font-black text-slate-900 dark:text-white">{formatUSD(r.total_usd)}</span></td>
-                    <td className="px-6 py-4"><span className="font-black text-amber-600">{formatUSD(r.remaining_usd)}</span></td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <span className="font-black text-amber-600">{formatUSD(r.remaining_usd)}</span>
+                        <br />
+                        <span className="text-[11px] font-medium text-slate-400">{formatBS(convertToBS(r.remaining_usd, currentRate))}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4"><span className="text-sm text-slate-500">Bs {r.exchange_rate_at_sale.toFixed(2)}</span></td>
                     <td className="px-6 py-4">
                       <span className={cn("text-[10px] font-bold px-2 py-1 rounded-lg uppercase",
@@ -284,16 +292,22 @@ export default function ReceivablesPage() {
             >
               <div className="p-8 border-b dark:border-slate-800">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">Cobrar CxC</h3>
-                <p className="text-sm text-slate-500">{payModal.r.customer_name} — {formatUSD(payModal.r.remaining_usd)} restantes</p>
+                <p className="text-sm text-slate-500">{payModal.r.customer_name} — {formatUSD(payModal.r.remaining_usd)} ({formatBS(convertToBS(payModal.r.remaining_usd, currentRate))}) restantes</p>
               </div>
               <div className="p-8 space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Monto a cobrar (Bs)</label>
-                  <Input type="number" min={0} step={0.01} value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="rounded-xl text-lg font-bold" />
-                </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Monto a cobrar (Bs)</label>
+                    <Input type="number" min={0} step={0.01} value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="rounded-xl text-lg font-bold" />
+                    {payAmount && parseFloat(payAmount) > 0 && !rateLoading && (
+                      <p className="text-sm text-slate-500 mt-1 ml-1">
+                        ≈ {formatUSD(convertToUSD(parseFloat(payAmount), currentRate))}{" "}
+                        <span className="text-[10px] text-slate-400">@ Bs {currentRate.toFixed(2)}</span>
+                      </p>
+                    )}
+                  </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Método de pago</label>
                   <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}
@@ -322,7 +336,11 @@ export default function ReceivablesPage() {
                               {h.payment_method === "transfer" ? "Transferencia" : h.payment_method === "cash" ? "Efectivo" : h.payment_method}
                             </span>
                           </div>
-                          <span className="text-sm font-black text-emerald-600">{formatUSD(h.amount_usd)}</span>
+                          <div className="text-right">
+                            <span className="text-sm font-black text-emerald-600">{formatUSD(h.amount_usd)}</span>
+                            <br />
+                            <span className="text-xs font-medium text-slate-400">{formatBS(h.amount_bs)}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
