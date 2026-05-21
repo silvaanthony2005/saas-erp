@@ -25,15 +25,16 @@ function validateForm(data: InventoryItemInput): FormErrors {
   const errors: FormErrors = {};
   if (!data.name?.trim()) errors.name = "El nombre es requerido";
   if (!data.sku?.trim()) errors.sku = "El SKU es requerido";
-  if (data.sale_price_bs === undefined || data.sale_price_bs < 0) errors.sale_price_bs = "El precio de venta debe ser un número positivo";
-  if (data.cost_price_bs !== undefined && data.cost_price_bs < 0) errors.cost_price_bs = "El precio de costo debe ser un número positivo";
+  if (data.sale_price_usd === undefined || data.sale_price_usd < 0) errors.sale_price_bs = "El precio de venta debe ser un número positivo";
+  if (data.cost_price_usd !== undefined && data.cost_price_usd < 0) errors.cost_price_bs = "El precio de costo debe ser un número positivo";
   if (data.stock_quantity !== undefined && data.stock_quantity < 0) errors.stock_quantity = "El stock debe ser un número positivo";
   return errors;
 }
 
 const initialFormData: InventoryItemInput = {
   name: "", sku: "", description: "", image_url: "",
-  cost_price_bs: 0, sale_price_bs: 0, stock_quantity: 0, min_stock: 5, category_id: 1,
+  stock_quantity: 0, min_stock: 5, category_id: 1,
+  cost_price_usd: 0, sale_price_usd: 0,
 };
 
 export default function InventoryPage() {
@@ -89,9 +90,11 @@ export default function InventoryPage() {
     setEditingItem(item);
     setFormData({
       name: item.name, sku: item.sku, description: item.description || "",
-      image_url: item.image_url || "", cost_price_bs: item.cost_price_bs,
-      sale_price_bs: item.sale_price_bs, stock_quantity: item.stock_quantity,
+      image_url: item.image_url || "",
+      stock_quantity: item.stock_quantity,
       min_stock: item.min_stock || 5, category_id: item.category_id,
+      cost_price_usd: item.cost_price_usd,
+      sale_price_usd: item.sale_price_usd,
     });
     setImagePreview(item.image_url || null);
     setFormErrors({});
@@ -331,10 +334,10 @@ export default function InventoryPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex flex-col items-end">
                           <span className="font-black text-slate-900 dark:text-white">
-                            {formatBS(item.sale_price_bs)}
+                            {formatUSD(item.sale_price_usd)}
                           </span>
                           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                            {formatUSD(item.sale_price_bs / currentExchangeRate)}
+                            {formatBS(item.sale_price_usd * currentExchangeRate)}
                           </span>
                         </div>
                       </td>
@@ -515,14 +518,18 @@ export default function InventoryPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Venta *</label>
-                      <Input type="number" step="0.01" min="0" value={formData.sale_price_bs} onChange={(e) => handleInputChange("sale_price_bs", parseFloat(e.target.value) || 0)} className={formErrors.sale_price_bs ? "border-rose-500 focus:ring-rose-500" : ""} />
-                      {formErrors.sale_price_bs && <p className="text-xs text-rose-500 mt-1">{formErrors.sale_price_bs}</p>}
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Venta USD *</label>
+                      <Input type="number" step="0.01" min="0" value={formData.sale_price_usd} onChange={(e) => handleInputChange("sale_price_usd", parseFloat(e.target.value) || 0)} className={formErrors.sale_price_bs ? "border-rose-500 focus:ring-rose-500" : ""} />
+                      {formData.sale_price_usd > 0 && currentExchangeRate > 0 && (
+                        <p className="text-[10px] text-slate-400 mt-1">Bs: {formatBS(formData.sale_price_usd * currentExchangeRate)}</p>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Costo</label>
-                      <Input type="number" step="0.01" min="0" value={formData.cost_price_bs} onChange={(e) => handleInputChange("cost_price_bs", parseFloat(e.target.value) || 0)} className={formErrors.cost_price_bs ? "border-rose-500 focus:ring-rose-500" : ""} />
-                      {formErrors.cost_price_bs && <p className="text-xs text-rose-500 mt-1">{formErrors.cost_price_bs}</p>}
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Costo USD</label>
+                      <Input type="number" step="0.01" min="0" value={formData.cost_price_usd} onChange={(e) => handleInputChange("cost_price_usd", parseFloat(e.target.value) || 0)} />
+                      {formData.cost_price_usd > 0 && currentExchangeRate > 0 && (
+                        <p className="text-[10px] text-slate-400 mt-1">Bs: {formatBS(formData.cost_price_usd * currentExchangeRate)}</p>
+                      )}
                     </div>
                   </div>
 

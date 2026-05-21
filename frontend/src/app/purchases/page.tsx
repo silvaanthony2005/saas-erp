@@ -80,8 +80,8 @@ export default function PurchasesPage() {
       const newProd = await inventoryService.create({
         name: newProductName.trim(),
         sku: newProductSku.trim() || newProductName.trim().substring(0, 3).toUpperCase() + Date.now().toString().slice(-6),
-        cost_price_bs: 0,
-        sale_price_bs: newProductSalePrice,
+        cost_price_usd: 0,
+        sale_price_usd: newProductSalePrice,
         stock_quantity: 0,
         category_id: newProductCategoryId || 1,
       });

@@ -8,6 +8,8 @@ export interface InventoryItem {
   image_url?: string;
   cost_price_bs: number;
   sale_price_bs: number;
+  cost_price_usd: number;
+  sale_price_usd: number;
   stock_quantity: number;
   min_stock?: number;
   category_id: number;
@@ -19,8 +21,8 @@ export interface InventoryItemInput {
   sku: string;
   description?: string;
   image_url?: string;
-  cost_price_bs: number;
-  sale_price_bs: number;
+  cost_price_usd: number;
+  sale_price_usd: number;
   stock_quantity: number;
   min_stock?: number;
   category_id: number;
@@ -82,17 +84,31 @@ export interface SaleDetail {
   product_name?: string;
   quantity: number;
   unit_price_bs: number;
+  unit_price_usd: number;
+}
+
+export interface SalePayment {
+  id: number;
+  payment_method: string;
+  amount_bs: number;
+  amount_usd?: number;
+  reference_number?: string;
+  exchange_rate?: number;
+  created_at: string;
 }
 
 export interface Sale {
   id: number;
   total_amount_bs: number;
+  total_usd: number;
   exchange_rate: number;
   payment_method: string;
   timestamp: string;
   customer_name?: string;
   customer_dni?: string;
+  customer_category?: string;
   details: SaleDetail[];
+  payments: SalePayment[];
 }
 
 export interface Customer {
@@ -102,6 +118,8 @@ export interface Customer {
   last_name: string;
   phone?: string;
   address?: string;
+  category: string;
+  credit_limit_usd: number;
   created_at: string;
 }
 
@@ -324,6 +342,78 @@ export const costingService = {
     if (params?.limit) query.set("limit", String(params.limit));
     return fetchApi<{ movements: InventoryMovement[]; total: number; page: number; page_size: number }>(`/costing/kardex?${query}`);
   },
+};
+
+export interface Receivable {
+  id: number;
+  sale_id: number;
+  customer_id: number;
+  customer_name?: string;
+  customer_dni?: string;
+  total_usd: number;
+  remaining_usd: number;
+  exchange_rate_at_sale: number;
+  status: string;
+  due_date?: string;
+  created_at: string;
+}
+
+export interface ReceivablePayment {
+  id: number;
+  amount_usd: number;
+  amount_bs: number;
+  exchange_rate: number;
+  payment_method: string;
+  reference_number?: string;
+  payment_date: string;
+}
+
+export interface CxCSummary {
+  total_pending_usd: number;
+  total_overdue_usd: number;
+  total_paid_usd: number;
+}
+
+export interface CustomerBalance {
+  customer_id: number;
+  customer_name: string;
+  total_debt_usd: number;
+  credit_limit_usd: number;
+  available_credit_usd: number;
+  active_receivables: number;
+}
+
+export interface ReceivableScheduleItem {
+  id: number;
+  amount_usd: number;
+  due_date: string;
+  status: string;
+  notes?: string;
+}
+
+export interface ScheduleInstallmentInput {
+  amount_usd: number;
+  due_date: string;
+  notes?: string;
+}
+
+export const receivableService = {
+  getAll: (params?: { skip?: number; limit?: number; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.status) query.set("status", params.status);
+    return fetchApi<{ receivables: Receivable[]; total: number }>(`/receivables?${query}`);
+  },
+  getById: (id: number) => fetchApi<Receivable>(`/receivables/${id}`),
+  getPayments: (id: number) => fetchApi<{ payments: ReceivablePayment[]; total: number }>(`/receivables/${id}/payments`),
+  makePayment: (id: number, data: { amount_bs: number; payment_method?: string; reference_number?: string }) =>
+    fetchApi(`/receivables/${id}/pay`, { method: "POST", body: JSON.stringify(data) }),
+  getSummary: () => fetchApi<CxCSummary>("/receivables/summary/all"),
+  getCustomerBalance: (customerId: number) => fetchApi<CustomerBalance>(`/receivables/customer/${customerId}/balance`),
+  getSchedule: (id: number) => fetchApi<ReceivableScheduleItem[]>(`/receivables/${id}/schedule`),
+  setupSchedule: (id: number, data: { installments: ScheduleInstallmentInput[] }) =>
+    fetchApi<ReceivableScheduleItem[]>(`/receivables/${id}/schedule`, { method: "POST", body: JSON.stringify(data) }),
 };
 
 export { hrService, type Employee, type Payroll, type PayrollProcessData } from './hrService';
