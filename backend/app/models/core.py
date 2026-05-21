@@ -13,12 +13,14 @@ class License(Base):
     has_pos_module = Column(Boolean, default=True)
     has_inventory_module = Column(Boolean, default=True)
     has_hr_module = Column(Boolean, default=False)
+    has_accounting_module = Column(Boolean, default=False)
 
 class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    full_name = Column(String, default="")
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    role = Column(String, default="admin") # admin, cashier, inventory
+    role = Column(String, default="cajero")  # dueño, supervisor, cajero

@@ -16,7 +16,10 @@ from app.models.hr import Employee, Payroll
 from app.models.exchange_rate import ExchangeRate
 from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDetail, AccountsPayable, PaymentSchedule, InventoryMovement, CostingConfig
 
-from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables, v1_auth
+from app.core.auth import hash_password, create_access_token
+from app.models.core import User, License
+from datetime import datetime as dt
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 
@@ -31,6 +34,13 @@ def session_fixture():
     Base.metadata.create_all(bind=engine)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = TestingSessionLocal()
+
+    admin = User(username="admin", full_name="Admin", hashed_password=hash_password("admin123"), is_active=True, role="dueño")
+    db.add(admin)
+    lic = License(hwid="test-hwid", install_date=dt.utcnow(), is_active=True, has_pos_module=True, has_inventory_module=True, has_hr_module=True, has_accounting_module=True)
+    db.add(lic)
+    db.commit()
+
     try:
         yield db
     finally:
@@ -64,6 +74,7 @@ def client_fixture(session):
     app.include_router(v1_accounts_payable.router, prefix=f"{settings.API_V1_STR}/accounts-payable", tags=["accounts-payable"])
     app.include_router(v1_costing.router, prefix=f"{settings.API_V1_STR}/costing", tags=["costing"])
     app.include_router(v1_receivables.router, prefix=f"{settings.API_V1_STR}/receivables", tags=["receivables"])
+    app.include_router(v1_auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
     @app.get("/")
     def root():
@@ -73,4 +84,5 @@ def client_fixture(session):
         yield session
 
     app.dependency_overrides[get_db] = get_test_db
-    return TestClient(app)
+    token = create_access_token({"sub": "1", "role": "dueño"})
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})

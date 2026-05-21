@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.auth import require_role
 from app.services.exchange_rate_service import ExchangeRateService
 from pydantic import BaseModel
 import datetime
@@ -20,7 +21,6 @@ class ManualRateUpdate(BaseModel):
 def get_current_rate(db: Session = Depends(get_db)):
     rate_obj = ExchangeRateService.get_current_rate(db)
     if not rate_obj:
-        # Intentar obtenerla en el momento si no hay ninguna
         val = ExchangeRateService.fetch_bcv_rate()
         if val:
             rate_obj = ExchangeRateService.update_rate(db, val, source="BCV")
@@ -35,7 +35,11 @@ def get_current_rate(db: Session = Depends(get_db)):
     }
 
 @router.post("/manual")
-def update_rate_manual(data: ManualRateUpdate, db: Session = Depends(get_db)):
+def update_rate_manual(
+    data: ManualRateUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño")),
+):
     if data.rate <= 0:
         raise HTTPException(status_code=400, detail="Rate must be greater than zero")
     

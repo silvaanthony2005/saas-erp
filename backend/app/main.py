@@ -14,9 +14,10 @@ from app.models.purchasing import Supplier, PurchaseInvoice, PurchaseInvoiceDeta
 # Crear tablas
 Base.metadata.create_all(bind=engine)
 
-from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables
+from app.api import v1_inventory, v1_sales, v1_accounting, v1_hr, v1_dashboard, v1_customers, v1_config, v1_suppliers, v1_purchases, v1_accounts_payable, v1_costing, v1_receivables, v1_auth
 import asyncio
 from app.core.scheduler import update_exchange_rate_task
+from app.core.auth import seed_admin_user
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -26,7 +27,7 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
-    # Iniciar la tarea de actualización de tasa en segundo plano
+    seed_admin_user()
     asyncio.create_task(update_exchange_rate_task())
 
 
@@ -56,6 +57,7 @@ app.include_router(v1_purchases.router, prefix=f"{settings.API_V1_STR}/purchases
 app.include_router(v1_accounts_payable.router, prefix=f"{settings.API_V1_STR}/accounts-payable", tags=["accounts-payable"])
 app.include_router(v1_costing.router, prefix=f"{settings.API_V1_STR}/costing", tags=["costing"])
 app.include_router(v1_receivables.router, prefix=f"{settings.API_V1_STR}/receivables", tags=["receivables"])
+app.include_router(v1_auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
 @app.get("/")
 def root():

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from app.core.database import get_db
+from app.core.auth import require_role
 from app.models.business import Product, Category, Transaction, TransactionDetail
 from app.models.hr import Employee
 from app.models.accounting import Expense, AccountingEntry
@@ -15,11 +16,13 @@ def get_day_name(date: datetime) -> str:
     return days[date.weekday()]
 
 @router.get("/dashboard")
-def get_dashboard(db: Session = Depends(get_db)):
+def get_dashboard(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     today = datetime.now().date()
     week_ago = today - timedelta(days=6)
     
-    # Stats
     total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(Transaction.type == "sale").scalar() or 0
     total_expenses = db.query(func.coalesce(func.sum(Expense.amount_bs), 0)).scalar() or 0
     net_profit = total_sales - total_expenses
@@ -30,7 +33,6 @@ def get_dashboard(db: Session = Depends(get_db)):
     
     active_employees = db.query(Employee).filter(Employee.is_active == True).count()
     
-    # Daily sales for the last 7 days
     daily_sales = []
     for i in range(7):
         day = today - timedelta(days=6-i)
@@ -48,7 +50,6 @@ def get_dashboard(db: Session = Depends(get_db)):
             "value": float(sales)
         })
     
-    # Transactions by category
     categories = db.query(Category).all()
     sales_by_category = []
     for cat in categories:
@@ -65,17 +66,14 @@ def get_dashboard(db: Session = Depends(get_db)):
                 "value": float(total)
             })
     
-    # Ordenar por valor y tomar las mejores 6
     sales_by_category.sort(key=lambda x: x["value"], reverse=True)
     sales_by_category = sales_by_category[:6]
     
-    # Si no hay datos, agregar un ejemplo
     if not sales_by_category:
         sales_by_category = [
             {"category": "Sin datos", "value": 0}
         ]
     
-    # Low stock products
     low_stock = db.query(Product).filter(
         Product.stock_quantity <= Product.min_stock
     ).limit(4).all()
@@ -89,7 +87,6 @@ def get_dashboard(db: Session = Depends(get_db)):
         "category": p.category.name if p.category else "Sin categoría"
     } for p in low_stock]
     
-    # Top selling products
     top_products_query = db.query(
         Product.id,
         Product.name,
@@ -111,10 +108,8 @@ def get_dashboard(db: Session = Depends(get_db)):
         "total_revenue": float(p.total_revenue or 0)
     } for p in top_products_query]
     
-    # Recent activity
     recent_activity = []
     
-    # Recent sales
     recent_sales = db.query(Transaction).order_by(desc(Transaction.timestamp)).limit(5).all()
     for sale in recent_sales:
         recent_activity.append({
@@ -126,7 +121,6 @@ def get_dashboard(db: Session = Depends(get_db)):
             "color": "text-emerald-500 dark:text-emerald-400"
         })
     
-    # Recent expenses
     recent_expenses = db.query(Expense).order_by(desc(Expense.timestamp)).limit(3).all()
     for exp in recent_expenses:
         recent_activity.append({
@@ -138,7 +132,6 @@ def get_dashboard(db: Session = Depends(get_db)):
             "color": "text-rose-500 dark:text-rose-400"
         })
     
-    # Low stock alerts
     for p in low_stock[:3]:
         recent_activity.append({
             "id": p.id,
@@ -149,7 +142,6 @@ def get_dashboard(db: Session = Depends(get_db)):
             "color": "text-amber-500 dark:text-amber-400"
         })
     
-    # Ordenar por tiempo
     recent_activity = recent_activity[:10]
     
     return {
@@ -167,7 +159,10 @@ def get_dashboard(db: Session = Depends(get_db)):
     }
 
 @router.get("/dashboard/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     total_sales = db.query(func.coalesce(func.sum(Transaction.total_amount_bs), 0)).filter(Transaction.type == "sale").scalar() or 0
     total_expenses = db.query(func.coalesce(func.sum(Expense.amount_bs), 0)).scalar() or 0
     net_profit = total_sales - total_expenses
@@ -186,7 +181,10 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 @router.get("/dashboard/daily-sales")
-def get_daily_sales(db: Session = Depends(get_db)):
+def get_daily_sales(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     today = datetime.now().date()
     daily_sales = []
     for i in range(7):
@@ -207,7 +205,10 @@ def get_daily_sales(db: Session = Depends(get_db)):
     return daily_sales
 
 @router.get("/dashboard/sales-by-category")
-def get_sales_by_category(db: Session = Depends(get_db)):
+def get_sales_by_category(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     categories = db.query(Category).all()
     sales_by_category = []
     for cat in categories:
@@ -226,7 +227,10 @@ def get_sales_by_category(db: Session = Depends(get_db)):
     return sales_by_category
 
 @router.get("/dashboard/low-stock")
-def get_low_stock(db: Session = Depends(get_db)):
+def get_low_stock(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     products = db.query(Product).filter(
         Product.stock_quantity <= Product.min_stock
     ).limit(10).all()
@@ -240,7 +244,10 @@ def get_low_stock(db: Session = Depends(get_db)):
     } for p in products]
 
 @router.get("/dashboard/top-products")
-def get_top_products(db: Session = Depends(get_db)):
+def get_top_products(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     top_products = db.query(
         Product.id,
         Product.name,
@@ -262,7 +269,10 @@ def get_top_products(db: Session = Depends(get_db)):
     } for p in top_products]
 
 @router.get("/dashboard/recent-activity")
-def get_recent_activity(db: Session = Depends(get_db)):
+def get_recent_activity(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     recent_activity = []
     
     recent_sales = db.query(Transaction).order_by(desc(Transaction.timestamp)).limit(5).all()

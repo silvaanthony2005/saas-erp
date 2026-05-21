@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.auth import require_role
 from app.models.business import Customer, Transaction
 from app.schemas.business import CustomerCreate, CustomerResponse
 from sqlalchemy import func
@@ -18,7 +19,11 @@ def customer_to_response(c):
     )
 
 @router.post("", response_model=CustomerResponse)
-def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+def create_customer(
+    customer: CustomerCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     db_customer = db.query(Customer).filter(Customer.dni == customer.dni).first()
     if db_customer:
         raise HTTPException(status_code=400, detail="Customer already exists")
@@ -29,14 +34,23 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     return customer_to_response(new_customer)
 
 @router.get("/dni/{dni}", response_model=CustomerResponse)
-def get_customer_by_dni(dni: str, db: Session = Depends(get_db)):
+def get_customer_by_dni(
+    dni: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     customer = db.query(Customer).filter(Customer.dni == dni).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     return customer_to_response(customer)
 
 @router.put("/{customer_id}", response_model=CustomerResponse)
-def update_customer(customer_id: int, customer_data: CustomerCreate, db: Session = Depends(get_db)):
+def update_customer(
+    customer_id: int,
+    customer_data: CustomerCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not db_customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -47,11 +61,17 @@ def update_customer(customer_id: int, customer_data: CustomerCreate, db: Session
     return customer_to_response(db_customer)
 
 @router.get("", response_model=List[CustomerResponse])
-def get_customers(db: Session = Depends(get_db)):
+def get_customers(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     return [customer_to_response(c) for c in db.query(Customer).all()]
 
 @router.get("/stats")
-def get_customer_stats(db: Session = Depends(get_db)):
+def get_customer_stats(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     top_customers = (
         db.query(
             Customer.id, Customer.first_name, Customer.last_name, Customer.dni,
@@ -71,7 +91,11 @@ def get_customer_stats(db: Session = Depends(get_db)):
     ]
 
 @router.get("/{customer_id}/history")
-def get_customer_history(customer_id: int, db: Session = Depends(get_db)):
+def get_customer_history(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("dueño", "supervisor", "cajero")),
+):
     transactions = (
         db.query(Transaction)
         .filter(Transaction.customer_id == customer_id)

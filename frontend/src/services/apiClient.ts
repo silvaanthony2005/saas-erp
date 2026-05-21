@@ -1,28 +1,35 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-/**
- * Cliente de API base para manejar peticiones con validación de licencia automática.
- */
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  // En una versión final, aquí se inyectarían tokens o headers de HWID si fuera necesario
-  const defaultHeaders = {
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("stellar_token") : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      ...defaultHeaders,
-      ...options.headers,
+      ...headers,
+      ...options.headers as Record<string, string>,
     },
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("stellar_token");
+      localStorage.removeItem("stellar_user");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
     if (response.status === 403) {
-      // Manejar expiración de licencia o bloqueo
-      console.error("Acceso denegado: Licencia inválida o expirada.");
+      console.error("Acceso denegado.");
     }
     const errorData = await response.json().catch(() => ({}));
     const error: Error & { status?: number } = new Error(errorData.detail || `Error en la petición: ${response.status}`);

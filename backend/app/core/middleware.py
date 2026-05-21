@@ -9,7 +9,7 @@ class LicenseMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         method = request.method
-        if path.startswith("/api/v1/activate") or path.startswith("/api/v1/config") or path.startswith("/api/v1/dashboard") or path.startswith("/docs") or path.startswith("/openapi.json") or path == "/":
+        if path.startswith("/api/v1/activate") or path.startswith("/api/v1/auth") or path.startswith("/api/v1/config") or path.startswith("/api/v1/dashboard") or path.startswith("/docs") or path.startswith("/openapi.json") or path == "/":
             return await call_next(request)
         
         if method == "OPTIONS":
